@@ -1,0 +1,16 @@
+Command lines Used: 
+
+pip install requests beautifulsoup4 psycopg2-binary
+
+psql -U postgres
+
+CREATE DATABASE rpi_catalog;
+\c rpi_catalog
+
+psql -U postgres -d rpi_catalog -f schema.sql
+psql -U postgres -d rpi_catalog
+
+SELECT * FROM programs;
+SELECT * FROM program_years;
+SELECT * FROM semesters;
+SELECT * FROM courses LIMIT 10;
