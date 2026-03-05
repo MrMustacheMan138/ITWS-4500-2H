@@ -1,4 +1,4 @@
-### Architecture Overview
+# Architecture Overview
 
 This repository follows a layered architecture with a clear separation between:
 
