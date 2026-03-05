@@ -35,5 +35,69 @@ ITWS-4500-2H/
 ├─ .env.example
 ├─ README.md
 └─ .github/
+```
 
+### Targeted backend file layout
+
+Functionality:
+* Routers (API layer): HTTP handling only (request parsing/validation)
+* Services (application layer): use-case orchestration
+* Domain (business layer): curriculum logic, comparison/scoring rules, RAG citation requirements
+* Data (persistence layer): database models + repositories + migrations
+* Integrations (infrastructure layer): object storage, fetching, parsing, embeddings
+
+``` Plain Text
+apps/api/
+├─ app/
+│  ├─ main.py                      # FastAPI init + middleware + router include
+│  ├─ api/
+│  │  └─ v1/
+│  │     ├─ routers/               # endpoints only (no business logic)
+│  │     └─ deps.py                # dependencies: db session, auth checks
+│  ├─ services/                    # use cases: ingestion, comparison, AI
+│  ├─ domain/                      # pure rules: scoring, diff logic, parsing rules
+│  ├─ data/
+│  │  ├─ db.py                     # engine/session
+│  │  ├─ models/                   # SQLAlchemy models
+│  │  ├─ repositories/             # DB queries/transactions
+│  │  └─ migrations/               # Alembic migrations
+│  ├─ integrations/
+│  │  ├─ storage/                  # MinIO/S3 client wrapper
+│  │  ├─ fetchers/                 # URL download/snapshotting
+│  │  ├─ parsers/                  # HTML/PDF parsing adapters
+│  │  └─ embeddings/               # embedding client + pgvector utilities
+│  ├─ core/
+│  │  ├─ config.py                 # env settings
+│  │  ├─ security.py               # token verification + RBAC
+│  │  └─ rate_limit.py             # rate limiting logic (esp AI endpoints)
+│  └─ tests/
+├─ Dockerfile
+├─ pyproject.toml
+└─ alembic.ini
+```
+
+### Targeted frontend file layout
+
+Functions:
+* UI rendering
+* calling backend APIs
+* showing citations/snippets clearly
+* session-based route gating (NextAuth)
+
+``` Plain Text
+apps/web/
+├─ app/
+│  ├─ (public)/                     # public pages (search, browse, compare)
+│  ├─ dashboard/                    # authenticated views (uploads/ingestion)
+│  └─ api/auth/[...nextauth]/route.ts
+├─ components/
+│  ├─ comparison/                   # side-by-side tables, diffs
+│  ├─ citations/                    # show sources/snippets
+│  ├─ chat/                         # AI assistant UI
+│  └─ common/
+├─ lib/
+│  ├─ api/                          # typed fetch wrappers
+│  ├─ auth/                         # session helpers, RBAC helpers
+│  └─ utils/
+└─ middleware.ts                    # optional: lightweight gating only
 ```
