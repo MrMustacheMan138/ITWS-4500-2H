@@ -69,7 +69,7 @@ apps/api/
 │  ├─ core/
 │  │  ├─ config.py                 # env settings
 │  │  ├─ security.py               # token verification + RBAC
-│  │  └─ rate_limit.py             # rate limiting logic (esp AI endpoints)
+│  │  └─ rate_limit.py             # rate limiting logic (esp AI endpoints, will implement later if we have time)
 │  └─ tests/
 ├─ Dockerfile
 ├─ pyproject.toml
@@ -86,18 +86,46 @@ Functions:
 
 ``` Plain Text
 apps/web/
-├─ app/
-│  ├─ (public)/                     # public pages (search, browse, compare)
-│  ├─ dashboard/                    # authenticated views (uploads/ingestion)
-│  └─ api/auth/[...nextauth]/route.ts
-├─ components/
-│  ├─ comparison/                   # side-by-side tables, diffs
-│  ├─ citations/                    # show sources/snippets
-│  ├─ chat/                         # AI assistant UI
-│  └─ common/
-├─ lib/
-│  ├─ api/                          # typed fetch wrappers
-│  ├─ auth/                         # session helpers, RBAC helpers
-│  └─ utils/
-└─ middleware.ts                    # optional: lightweight gating only
+├─ src/
+│  ├─ app/
+│  │  ├─ (public)/
+│  │  │  ├─ page.tsx                 # landing / search
+│  │  │  ├─ programs/page.tsx
+│  │  │  └─ compare/page.tsx
+│  │  ├─ (auth)/
+│  │  │  ├─ login/page.tsx
+│  │  │  └─ onboarding/page.tsx
+│  │  ├─ dashboard/
+│  │  │  ├─ page.tsx                 # “my comparisons / ingestions”
+│  │  │  ├─ sources/page.tsx          # uploaded docs + status
+│  │  │  └─ ingest/page.tsx           # start ingestion flow
+│  │  ├─ api/
+│  │  │  └─ auth/[...nextauth]/route.ts
+│  │  ├─ layout.tsx
+│  │  └─ providers.tsx               # SessionProvider + any global providers
+│  │
+│  ├─ components/
+│  │  ├─ comparison/                 # side-by-side tables, diff highlighting
+│  │  ├─ citations/                  # citation drawer, snippet viewer
+│  │  ├─ chat/                       # AI assistant UI
+│  │  └─ common/                     # buttons, inputs, modals, etc. Common components
+│  │
+│  ├─ lib/
+│  │  ├─ api/
+│  │  │  ├─ client.ts                # fetch wrapper (base URL, errors)
+│  │  │  └─ endpoints.ts             # functions like getPrograms(), compare()
+│  │  ├─ auth/
+│  │  │  ├─ session.ts               # server/client session helpers
+│  │  │  └─ rbac.ts                  # role checks (admin/editor/viewer)
+│  │  ├─ schema/                     # zod schemas for forms
+│  │  └─ utils/
+│  │
+│  └─ styles/
+│  
+│
+├─ public/
+├─ middleware.ts                      # optional route gating if we have time
+├─ next.config.js
+├─ package.json
+└─ tsconfig.json
 ```

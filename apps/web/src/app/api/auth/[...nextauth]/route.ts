@@ -1,0 +1,1 @@
+export const { GET, POST } = require("@/auth").handlers
