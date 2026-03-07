@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SignUpForm } from '@/components/auth/SignUpForm';
 
 export default function SignupPage() {
   return (
@@ -16,9 +17,9 @@ export default function SignupPage() {
 
         {/* Placeholder Card */}
         <div className="bg-white rounded-lg shadow-md p-8">
-          <p className="text-center text-gray-600">
-            Signup form coming soon...
-          </p>
+          <div className="text-gray-600">
+            <SignUpForm/>
+          </div>
         </div>
 
         {/* Login Link */}
