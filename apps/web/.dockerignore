@@ -1,0 +1,32 @@
+# Next.js
+.next/
+node_modules/
+out/
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+dist/
+build/
