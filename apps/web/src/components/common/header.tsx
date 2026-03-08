@@ -5,7 +5,7 @@ import LoginButton from "./auth/login";
 
 export default function Header() {
    return (
-      <header className="bg-gray-800 text-white w-full flex items-center justify-start">
+      <header className="border-1 border-gray-700 bg-gray-800 text-white w-full flex items-center justify-start">
          <div className="flex items-center gap-1">
             <Image src={logo} alt="Project Logo" width={100} height={100} />
             <div>
