@@ -1,8 +1,15 @@
+# Front-end
 /apps/web/.env
 /apps/api/.env
 /apps/web/node_modules
 /apps/web/.next
 
+# Back-end
 /apps/api/.env
+/apps/api/__pycache__
 
+# Environment Variables
 .env/
+
+
+.vscode/
