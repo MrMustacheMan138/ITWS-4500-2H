@@ -2,20 +2,16 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.v1.routers import auth
-
-# Build DATABASE_URL from environment variables
-POSTGRES_USER = os.getenv("POSTGRES_USER")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_DB = os.getenv("POSTGRES_DB")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "database")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-
-os.environ["DATABASE_URL"] = (
-   f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
-   f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-)
+from database import engine, Base
+import models  # Import models so they're registered with Base
 
 app = FastAPI(title="Web Science API", version="1.0.0")
+
+# Create database tables on startup
+@app.on_event("startup")
+async def startup_event():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 # CORS middleware for frontend communication
 app.add_middleware(
