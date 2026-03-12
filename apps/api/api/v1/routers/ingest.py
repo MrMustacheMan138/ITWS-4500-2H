@@ -63,7 +63,7 @@ async def ingest_data(request: IngestRequest):
       entry_id = f"entry_{idx}"
       if entry.type == "pdf":
          # Call an imported function to chunk out the PDF into sections and pass it through to the LLM
-      else:
+      else: # Only two types, link or PDF (base64), so if not pdf, then link
          # Call an imported function to go through the contents that the URL leads to
 
       
