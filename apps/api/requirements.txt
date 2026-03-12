@@ -6,3 +6,7 @@ pydantic
 email-validator
 pydantic-settings
 python-dotenv
+langchain
+langchain-community
+pymupdf
+pdfplumber

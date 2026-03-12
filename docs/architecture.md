@@ -105,7 +105,7 @@ apps/web/
 │  │  │  └─ signup/page.tsx          # Business logic of signup page
 │  │  │
 │  │  ├─ dashboard/
-│  │  │  ├─ page.tsx                 # “my comparisons / ingestions”
+│  │  │  ├─ compare/new/page.tsx                 # “my comparisons / ingestions”
 │  │  │  ├─ sources/page.tsx          # uploaded docs + status
 │  │  │  └─ ingest/page.tsx           # start ingestion flow
 │  │  ├─ api/
