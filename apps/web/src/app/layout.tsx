@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={dmSans.className}>
+      <body className={`${dmSans.className} bg-slate-950 text-slate-100`}>
         <Providers>{children}</Providers>
       </body>
     </html>
