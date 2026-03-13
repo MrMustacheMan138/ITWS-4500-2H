@@ -54,10 +54,8 @@ export default function Dashboard() {
               {recentComparisons.map((c, i) => (
                 <div
                   key={i}
-                  className="flex items-center px-6 py-4 transition-colors cursor-pointer"
+                  className="flex items-center px-6 py-4 transition-colors cursor-pointer hover:bg-[rgba(255,255,255,0.02)]"
                   style={{ borderBottom: i < recentComparisons.length - 1 ? '1px solid #1e2740' : 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   {/* Unis */}
                   <div className="flex-1">
