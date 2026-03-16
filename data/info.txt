@@ -11,6 +11,5 @@ psql -U postgres -d rpi_catalog -f schema.sql
 psql -U postgres -d rpi_catalog
 
 SELECT * FROM programs;
-SELECT * FROM program_years;
-SELECT * FROM semesters;
+SELECT COUNT(*) FROM courses;
 SELECT * FROM courses LIMIT 10;
