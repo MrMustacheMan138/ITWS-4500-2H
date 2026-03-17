@@ -1,15 +1,15 @@
 import Header from "@/components/common/header"
 import Sidebar from "@/components/common/sidebar"
-import CompareForm from "@/components/comparison/CompareForm"
+import ResultsView from "@/components/comparison/ResultsView"
 
-export default function ComparePage() {
+export default function ResultsPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 ml-64 flex flex-col">
         <Header />
         <main className="flex-1 p-6">
-          <CompareForm />
+          <ResultsView />
         </main>
       </div>
     </div>
