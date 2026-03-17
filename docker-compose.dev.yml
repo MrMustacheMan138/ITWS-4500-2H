@@ -12,7 +12,11 @@ services:
       - /app/.next
     environment:
       - NODE_ENV=development
-    command: npm run dev
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - API_BASE_URL=http://api:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    command: npm run dev -- --hostname 0.0.0.0
   
   api:
     volumes:
