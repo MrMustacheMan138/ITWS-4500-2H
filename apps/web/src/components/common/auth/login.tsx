@@ -7,14 +7,19 @@ export default async function LoginButton() {
    return (
       <div>
          {session ? (
-            <form action="/api/auth/signout" method="POST">
-               <button 
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-               >
-                  Sign Out
-               </button>
-            </form>
+            <div className="flex items-center gap-3">
+               <span className="text-sm text-slate-200">
+                  Hi, {session.user.name?.trim() || session.user.email || "User"}
+               </span>
+               <form action="/api/auth/signout" method="POST">
+                  <button 
+                     type="submit"
+                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                  >
+                     Sign Out
+                  </button>
+               </form>
+            </div>
          ) : (
             <Link 
                href="/login"

@@ -46,24 +46,15 @@ export function SignUpForm() {
       setIsLoading(true);
    
       try {
-         // Signup endpoint
-         const response = await fetch('/api/auth/register', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify(formData),
-         });
-   
-         if (!response.ok) {
-            const data = await response.json();
-            setApiError(data.message || 'Something went wrong. Please try again.');
-         } else {
+            await signup(formData.email, formData.password, formData.name);
+            {
             router.push('/login'); // Redirect to login page after successful sign-up
             // NOTE: might change to re-direct to landing page and signed into session in the future
             router.refresh();
-         } 
+            }
       } catch (error) {
          setApiError (
-            error instanceof Error ? error.message : 'An unexpected error occured. Please try again'
+               error instanceof Error ? error.message : 'An unexpected error occured. Please try again'
          );
       } finally {
          setIsLoading(false);
