@@ -140,7 +140,7 @@ export function SignUpForm() {
             <input
                id="confirmPassword"
                name="confirmPassword"
-               type='confirmPassword'
+               type='password'
                autoComplete='new-password'
                value={formData.confirmPassword}
                onChange={handleChange}

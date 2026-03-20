@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth/session"
+import { signOut } from "@/auth"
 import Link from "next/link"
 
 export default async function LoginButton() {
@@ -11,7 +12,12 @@ export default async function LoginButton() {
                <span className="text-sm text-slate-200">
                   Hi, {session.user.name?.trim() || session.user.email || "User"}
                </span>
-               <form action="/api/auth/signout" method="POST">
+               <form
+                  action={async () => {
+                     "use server"
+                     await signOut({ redirectTo: "/login" })
+                  }}
+               >
                   <button 
                      type="submit"
                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
