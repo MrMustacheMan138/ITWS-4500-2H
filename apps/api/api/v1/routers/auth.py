@@ -5,14 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import User
-
-#from @/core/auth.py import hashpassword
+from core.auth import hash_password, verify_password, create_access_token
+from api.v1.deps import get_current_user
 
 router = APIRouter()
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
 
 class LoginResponse(BaseModel):
     id: int
@@ -29,8 +31,17 @@ class RegisterRequest(BaseModel):
     password: str
     confirm_password: str = Field(alias="confirmPassword")
 
+    model_config = {"populate_by_name": True}
+
 
 class RegisterResponse(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    role: str
+
+
+class MeResponse(BaseModel):
     id: int
     name: str
     email: EmailStr
@@ -41,16 +52,20 @@ class RegisterResponse(BaseModel):
 async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await db.scalar(select(User).where(User.email == credentials.email))
     if not user or not verify_password(credentials.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
 
     display_name = user.name.strip() or user.email
+    access_token = create_access_token({"sub": str(user.id)})
 
     return LoginResponse(
         id=user.id,
         email=user.email,
         name=display_name,
         role=user.role,
-        access_token=f"user-{user.id}",
+        access_token=access_token,
     )
 
 
@@ -83,4 +98,12 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         role=user.role,
     )
 
-@router.get("/me", response_model=)
+
+@router.get("/me", response_model=MeResponse)
+async def me(current_user: User = Depends(get_current_user)):
+    return MeResponse(
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        role=current_user.role,
+    )
