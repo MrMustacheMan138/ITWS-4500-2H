@@ -1,7 +1,6 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routers import auth
+from api.v1 import api_router
 from database import engine, Base
 import models  # Import models so they're registered with Base
 
@@ -22,8 +21,8 @@ app.add_middleware(
    allow_headers=["*"],
 )
 
-# Register routers
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+# Register API routes
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
