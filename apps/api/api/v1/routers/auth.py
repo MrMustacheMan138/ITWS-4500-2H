@@ -48,6 +48,10 @@ class MeResponse(BaseModel):
     role: str
 
 
+class LogoutResponse(BaseModel):
+    detail: str
+
+
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await db.scalar(select(User).where(User.email == credentials.email))
@@ -107,3 +111,8 @@ async def me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         role=current_user.role,
     )
+
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout():
+    return LogoutResponse(detail="Logged out successfully")

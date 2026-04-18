@@ -1,4 +1,3 @@
-# API v1 package
 from fastapi import APIRouter
 from api.v1.routers import auth, ingest, sources
 
