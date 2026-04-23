@@ -6,3 +6,10 @@ pydantic
 email-validator
 pydantic-settings
 python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+langchain
+langchain-community
+pymupdf
+pdfplumber
