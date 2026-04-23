@@ -1,6 +1,6 @@
 'use client';
-
-import Link from 'next/link';
+import { getSession } from "@/lib/auth/session"
+import Link from "next/link"
 import { signOut, useSession } from 'next-auth/react';
 
 export default function LoginButton() {
@@ -10,6 +10,10 @@ export default function LoginButton() {
    return (
       <div>
          {session ? (
+            <div className="flex items-center gap-3">
+               <span className="text-sm text-slate-200">
+                  Hi, {session.user.name?.trim() || session.user.email || "User"}
+               </span>
                <button
                   type="button"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
@@ -17,6 +21,7 @@ export default function LoginButton() {
                >
                   Sign Out
                </button>
+            </div>
          ) : (
             <Link
                href="/login"
