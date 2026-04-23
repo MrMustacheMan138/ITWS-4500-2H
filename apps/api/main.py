@@ -1,17 +1,21 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routers import auth
+from api.v1.routers import auth, ingest
 from database import engine, Base
 import models  # Import models so they're registered with Base
 
-app = FastAPI(title="Web Science API", version="1.0.0")
 
 # Create database tables on startup
-@app.on_event("startup")
-async def startup_event():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+   async with engine_begin() as conn:
+      await conn.run_sync(Base.metadata.create_all)
+   yield # app runs here
+   # teardown here
+
+app = FastAPI(title="Web Science API", version="1.0.0", lifespan=lifespan)
 
 # CORS middleware for frontend communication
 app.add_middleware(
@@ -23,7 +27,8 @@ app.add_middleware(
 )
 
 # Register routers
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(ingest.router, prefix="api/v1/ingest", tags=["ingest"])
 
 @app.get("/")
 async def root():
