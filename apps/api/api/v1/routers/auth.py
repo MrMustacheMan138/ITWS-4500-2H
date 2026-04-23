@@ -11,12 +11,17 @@ from core.security import verify_password, get_password_hash, create_access_toke
 router = APIRouter()
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
 
 class LoginResponse(BaseModel):
+    id: int
+    email: EmailStr
+    name: str
+    role: str
     access_token: str
     token_type: str = "bearer"
 
