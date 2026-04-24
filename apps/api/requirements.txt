@@ -7,8 +7,10 @@ email-validator
 pydantic-settings
 python-dotenv
 python-jose[cryptography]
-passlib[bcrypt]
-bcrypt
+
+bcrypt==4.0.1
+passlib[bcrypt]==1.7.4
+
 langchain
 langchain-community
 pymupdf
