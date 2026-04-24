@@ -87,7 +87,7 @@ async def signup(user_data: SignupRequest, db: DbSession):
     
     new_user = User(
         email=user_data.email,
-        full_name=user_data.name,
+        full_name=user_data.full_name,
         hashed_password=hashed_pw
     )
     db.add(new_user)
@@ -97,6 +97,6 @@ async def signup(user_data: SignupRequest, db: DbSession):
     return SignupResponse(
         id=new_user.id,
         email=new_user.email,
-        full_name=new_user.full_name,
+        name=new_user.full_name,
         created_at=new_user.created_at
     )
