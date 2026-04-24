@@ -29,18 +29,14 @@ class LoginResponse(BaseModel):
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
-    full_name: str
+    name: str
 
 
 class SignupResponse(BaseModel):
     id: int
     email: str
-    full_name: str
+    name: str
     created_at: str
-
-class LogoutResponse(BaseModel):
-    message: str
-
 
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest, db: DbSession):
@@ -59,7 +55,14 @@ async def login(credentials: LoginRequest, db: DbSession):
         )
     
     token = create_access_token({"sub": str(user.id)})
-    return LoginResponse(access_token=token, token_type="bearer")
+    return LoginResponse(
+        id=user.id, 
+        email=user.email, 
+        name=user.name, 
+        role=user.role, 
+        access_token=token, 
+        token_type="bearer"
+    )
     
 
 
@@ -77,7 +80,7 @@ async def signup(user_data: SignupRequest, db: DbSession):
     
     new_user = User(
         email=user_data.email,
-        full_name=user_data.full_name,
+        name=user_data.full_name,
         hashed_password=hashed_pw
     )
     db.add(new_user)
@@ -87,6 +90,6 @@ async def signup(user_data: SignupRequest, db: DbSession):
     return SignupResponse(
         id=new_user.id,
         email=new_user.email,
-        full_name=new_user.full_name,
+        name=new_user.full_name,
         created_at=new_user.created_at
     )

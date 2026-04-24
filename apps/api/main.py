@@ -28,7 +28,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(ingest.router, prefix="api/v1/ingest", tags=["ingest"])
+app.include_router(ingest.router, prefix="/api/v1/ingest", tags=["ingest"])
 app.include_router(sources.router, prefix="/api/v1/sources", tags=["sources"])
 
 @app.get("/")
