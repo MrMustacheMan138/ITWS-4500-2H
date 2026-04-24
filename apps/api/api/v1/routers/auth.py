@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from typing import Annotated
+from datetime import datetime
 
 from database import get_db
 from models import User
-from core.security import verify_password, get_password_hash, create_access_token
+from core.auth import verify_password, get_password_hash, create_access_token
 
 router = APIRouter()
 DbSession = Annotated[AsyncSession, Depends(get_db)]
@@ -21,7 +22,7 @@ class LoginResponse(BaseModel):
     id: int
     email: EmailStr
     name: str
-    role: str
+    is_admin: bool
     access_token: str
     token_type: str = "bearer"
 
@@ -36,7 +37,7 @@ class SignupResponse(BaseModel):
     id: int
     email: str
     name: str
-    created_at: str
+    created_at: datetime
 
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest, db: DbSession):
@@ -58,8 +59,8 @@ async def login(credentials: LoginRequest, db: DbSession):
     return LoginResponse(
         id=user.id, 
         email=user.email, 
-        name=user.name, 
-        role=user.role, 
+        name=user.full_name, 
+        is_admin=user.is_admin, 
         access_token=token, 
         token_type="bearer"
     )
@@ -80,7 +81,7 @@ async def signup(user_data: SignupRequest, db: DbSession):
     
     new_user = User(
         email=user_data.email,
-        name=user_data.full_name,
+        full_name=user_data.name,
         hashed_password=hashed_pw
     )
     db.add(new_user)
