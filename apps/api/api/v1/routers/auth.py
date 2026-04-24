@@ -29,7 +29,7 @@ class LoginResponse(BaseModel):
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
-    name: str
+    full_name: str
 
 
 class SignupResponse(BaseModel):
@@ -76,11 +76,17 @@ async def signup(user_data: SignupRequest, db: DbSession):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    if len(user_data.password) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password cannot exceed 72 characters"
+        )
+
     hashed_pw = get_password_hash(user_data.password)
     
     new_user = User(
         email=user_data.email,
-        name=user_data.full_name,
+        full_name=user_data.full_name,
         hashed_password=hashed_pw
     )
     db.add(new_user)
@@ -90,6 +96,6 @@ async def signup(user_data: SignupRequest, db: DbSession):
     return SignupResponse(
         id=new_user.id,
         email=new_user.email,
-        name=new_user.full_name,
+        full_name=new_user.full_name,
         created_at=new_user.created_at
     )
