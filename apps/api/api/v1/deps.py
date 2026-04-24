@@ -6,7 +6,7 @@ from typing import Annotated
 
 from database import get_db
 from models import User
-from core.security import ALGORITHM, SECRET_KEY, oauth2_scheme
+from core.auth import ALGORITHM, SECRET_KEY, oauth2_scheme
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
