@@ -127,7 +127,7 @@ async def create_source(
         source_url=source_data.source_url,
         file_name=source_data.file_name,
         status="pending",
-        metadata=source_data.metadata
+        source_metadata=source_data.metadata
     )
 
     db.add(new_source)

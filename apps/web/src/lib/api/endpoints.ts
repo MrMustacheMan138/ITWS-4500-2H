@@ -10,16 +10,9 @@ export async function login(email: string, password: string) {
 }
 
 export async function signup(email: string, password: string, name: string) {
-  const response = await apiClient('/api/v1/auth/register', {
+  const response = await apiClient('/api/v1/auth/signup', {
     method: 'POST',
     body: JSON.stringify({ email, password, confirmPassword: password, name }),
-  });
-  return response;
-}
-
-export async function logout() {
-  const response = await apiClient('/api/v1/auth/logout', {
-    method: 'POST',
   });
   return response;
 }
