@@ -2,18 +2,16 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routers import auth, ingest, sources
-from database import engine, Base
+from api.v1.routers import auth, ingest, sources, programs, comparisons
+from database import init_db
 import models
 
 
 # Create database tables on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-   async with engine.begin() as conn:
-      await conn.run_sync(Base.metadata.create_all)
-   yield # app runs here
-   # teardown here
+   await init_db()
+   yield
 
 app = FastAPI(title="Web Science API", version="1.0.0", lifespan=lifespan)
 
@@ -30,6 +28,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(ingest.router, prefix="/api/v1/ingest", tags=["ingest"])
 app.include_router(sources.router, prefix="/api/v1/sources", tags=["sources"])
+app.include_router(programs.router, prefix="/api/v1/programs", tags=["programs"])
+app.include_router(comparisons.router, prefix="/api/v1/comparisons", tags=["comparisons"])
 
 @app.get("/")
 async def root():
