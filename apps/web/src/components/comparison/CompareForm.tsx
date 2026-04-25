@@ -1,8 +1,29 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiClient, ApiError } from '@/lib/api/client'
 
-function UniCard({ label, color, defaultName }: { label: string; color: 'blue' | 'gold'; defaultName: string }) {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface UniCardState {
+  name: string
+  sources: string[]
+}
+
+// ─── UniCard ──────────────────────────────────────────────────────────────────
+
+function UniCard({
+  label,
+  color,
+  defaultName,
+  onChange,
+}: {
+  label: string
+  color: 'blue' | 'gold'
+  defaultName: string
+  onChange: (state: UniCardState) => void
+}) {
+  const [name, setName] = useState(defaultName)
   const [sources, setSources] = useState<string[]>(
     defaultName === 'New York University'
       ? ['https://cs.nyu.edu/home/undergrad/cs_bs_program.html']
@@ -10,16 +31,33 @@ function UniCard({ label, color, defaultName }: { label: string; color: 'blue' |
   )
   const [inputVal, setInputVal] = useState('')
 
-  const addSource = () => {
-    if (inputVal.trim()) {
-      setSources(prev => [...prev, inputVal.trim()])
-      setInputVal('')
-    }
+  const borderColor = color === 'blue' ? '#4d7cfe' : '#f5a623'
+  const bgColor     = color === 'blue' ? 'rgba(77,124,254,0.15)' : 'rgba(245,166,35,0.15)'
+  const textColor   = color === 'blue' ? '#4d7cfe' : '#f5a623'
+
+  const update = (nextName: string, nextSources: string[]) => {
+    onChange({ name: nextName, sources: nextSources })
   }
 
-  const borderColor = color === 'blue' ? '#4d7cfe' : '#f5a623'
-  const bgColor = color === 'blue' ? 'rgba(77,124,254,0.15)' : 'rgba(245,166,35,0.15)'
-  const textColor = color === 'blue' ? '#4d7cfe' : '#f5a623'
+  const handleNameChange = (val: string) => {
+    setName(val)
+    update(val, sources)
+  }
+
+  const addSource = () => {
+    const trimmed = inputVal.trim()
+    if (!trimmed) return
+    const next = [...sources, trimmed]
+    setSources(next)
+    setInputVal('')
+    update(name, next)
+  }
+
+  const removeSource = (idx: number) => {
+    const next = sources.filter((_, i) => i !== idx)
+    setSources(next)
+    update(name, next)
+  }
 
   return (
     <div className="flex-1 rounded-xl border border-white/10 bg-white/5 p-6">
@@ -32,7 +70,8 @@ function UniCard({ label, color, defaultName }: { label: string; color: 'blue' |
           {label}
         </span>
         <input
-          defaultValue={defaultName}
+          value={name}
+          onChange={e => handleNameChange(e.target.value)}
           placeholder="University name..."
           className="flex-1 bg-transparent border-none outline-none text-white text-[15px] font-medium placeholder-white/30"
         />
@@ -52,7 +91,18 @@ function UniCard({ label, color, defaultName }: { label: string; color: 'blue' |
         >
           <span className="text-[#4d7cfe] text-xs">🔗</span>
           <span className="flex-1 text-white/60 text-[12px] truncate">{s}</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(77,124,254,0.2)', color: '#4d7cfe' }}>URL</span>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded"
+            style={{ background: 'rgba(77,124,254,0.2)', color: '#4d7cfe' }}
+          >
+            URL
+          </span>
+          <button
+            onClick={() => removeSource(i)}
+            className="text-white/20 hover:text-white/60 transition-colors text-lg leading-none ml-1"
+          >
+            ×
+          </button>
         </div>
       ))}
 
@@ -63,9 +113,15 @@ function UniCard({ label, color, defaultName }: { label: string; color: 'blue' |
           value={inputVal}
           onChange={e => setInputVal(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addSource()}
-          placeholder="Paste a URL, upload a PDF, or type/paste text..."
+          placeholder="Paste a URL and press Enter..."
           className="flex-1 bg-transparent border-none outline-none text-white/60 text-[13px] placeholder-white/25"
         />
+        <button
+          onClick={addSource}
+          className="text-[12px] px-2 py-1 rounded text-white/40 hover:text-white/70 transition-colors"
+        >
+          Add
+        </button>
       </div>
 
       {/* Buttons */}
@@ -81,8 +137,71 @@ function UniCard({ label, color, defaultName }: { label: string; color: 'blue' |
   )
 }
 
+// ─── CompareForm ──────────────────────────────────────────────────────────────
+
 export default function CompareForm() {
   const router = useRouter()
+
+  const [uniA, setUniA] = useState<UniCardState>({
+    name: 'New York University',
+    sources: ['https://cs.nyu.edu/home/undergrad/cs_bs_program.html'],
+  })
+  const [uniB, setUniB] = useState<UniCardState>({
+    name: 'Carnegie Mellon University',
+    sources: [],
+  })
+
+  const [programType, setProgramType] = useState('B.S. Computer Science')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleRun = async () => {
+    setError('')
+
+    // Basic validation
+    if (!uniA.name.trim() || !uniB.name.trim()) {
+      setError('Please enter names for both universities.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // 1. Create a program record for each university
+      const [progA, progB] = await Promise.all([
+        apiClient('/api/v1/programs/', {
+          method: 'POST',
+          body: JSON.stringify({ name: programType, institution: uniA.name }),
+        }),
+        apiClient('/api/v1/programs/', {
+          method: 'POST',
+          body: JSON.stringify({ name: programType, institution: uniB.name }),
+        }),
+      ])
+
+      // 2. Create the comparison record linking both programs
+      const comparison = await apiClient('/api/v1/comparisons/', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: `${uniA.name} vs ${uniB.name} — ${programType}`,
+          program_a_id: progA.id,
+          program_b_id: progB.id,
+        }),
+      })
+
+      // 3. Navigate to results, passing the comparison id so ResultsView can fetch it
+      router.push(`/dashboard/results?id=${comparison.id}`)
+
+    } catch (e) {
+      if (e instanceof ApiError) {
+        setError(e.message)
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -90,28 +209,65 @@ export default function CompareForm() {
 
       {/* University cards */}
       <div className="flex gap-4 mb-4">
-        <UniCard label="A" color="blue" defaultName="New York University" />
-        <UniCard label="B" color="gold" defaultName="Carnegie Mellon University" />
+        <UniCard label="A" color="blue" defaultName="New York University"        onChange={setUniA} />
+        <UniCard label="B" color="gold" defaultName="Carnegie Mellon University" onChange={setUniB} />
       </div>
 
       {/* Options */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 mb-6">
         <h2 className="text-[15px] font-semibold text-white mb-4">Comparison Options</h2>
         <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'PROGRAM TYPE',  options: ['B.S. Computer Science', 'B.S. Electrical Engineering', 'M.S. Computer Science'] },
-            { label: 'FOCUS AREAS',   options: ['All', 'Core Requirements', 'Elective Structure', 'Specialization Tracks'] },
-            { label: 'RIGOR METRICS', options: ['Full Analysis', 'Quick Overview', 'Credit Hours Only'] },
-          ].map(f => (
-            <div key={f.label}>
-              <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">{f.label}</label>
-              <select className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer">
-                {f.options.map(o => <option key={o} className="bg-gray-900">{o}</option>)}
-              </select>
-            </div>
-          ))}
+          {/* Program type — this drives what gets sent to the API */}
+          <div>
+            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
+              Program Type
+            </label>
+            <select
+              value={programType}
+              onChange={e => setProgramType(e.target.value)}
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer"
+            >
+              {['B.S. Computer Science', 'B.S. Electrical Engineering', 'M.S. Computer Science'].map(o => (
+                <option key={o} className="bg-gray-900">{o}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Focus areas — UI only for now, passed later when LLM service exists */}
+          <div>
+            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
+              Focus Areas
+            </label>
+            <select className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer">
+              {['All', 'Core Requirements', 'Elective Structure', 'Specialization Tracks'].map(o => (
+                <option key={o} className="bg-gray-900">{o}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Rigor metrics — UI only for now */}
+          <div>
+            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
+              Rigor Metrics
+            </label>
+            <select className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer">
+              {['Full Analysis', 'Quick Overview', 'Credit Hours Only'].map(o => (
+                <option key={o} className="bg-gray-900">{o}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div
+          className="rounded-lg px-4 py-3 mb-4 text-[13px]"
+          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}
+        >
+          {error}
+        </div>
+      )}
 
       {/* Run row */}
       <div className="flex justify-end gap-3">
@@ -119,11 +275,12 @@ export default function CompareForm() {
           Save as Draft
         </button>
         <button
-          onClick={() => router.push('/dashboard/results')}
-          className="px-6 py-2.5 rounded-lg text-[15px] font-medium text-white transition-all hover:-translate-y-0.5"
+          onClick={handleRun}
+          disabled={isSubmitting}
+          className="px-6 py-2.5 rounded-lg text-[15px] font-medium text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0"
           style={{ background: '#4d7cfe' }}
         >
-          Run Comparison →
+          {isSubmitting ? 'Creating…' : 'Run Comparison →'}
         </button>
       </div>
     </div>
