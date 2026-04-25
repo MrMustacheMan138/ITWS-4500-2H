@@ -41,42 +41,39 @@ class SignupResponse(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest, db: DbSession):
-    """
-    Login endpoint: authenticate user with email and password.
-    """
-    # Queries the table
-    result = await db.execute(select(User).where(User.email == credentials.email))
+    email = credentials.email.strip().lower()
+
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
 
-    # Verifies
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Credentials"
         )
-    
+
     token = create_access_token({"sub": str(user.id)})
+
     return LoginResponse(
-        id=user.id, 
-        email=user.email, 
-        name=user.full_name, 
-        is_admin=user.is_admin, 
-        access_token=token, 
+        id=user.id,
+        email=user.email,
+        name=user.full_name,
+        is_admin=user.is_admin,
+        access_token=token,
         token_type="bearer"
     )
-    
 
 
 @router.post("/signup", response_model=SignupResponse)
 async def signup(user_data: SignupRequest, db: DbSession):
-    """
-    Signup endpoint: create a new user account.
-    """
-    result = await db.execute(select(User).where(User.email == user_data.email))
+    email = user_data.email.strip().lower()
+
+    result = await db.execute(select(User).where(User.email == email))
     existing_user = result.scalars().first()
+
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     if len(user_data.password) > 72:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,19 +81,20 @@ async def signup(user_data: SignupRequest, db: DbSession):
         )
 
     hashed_pw = get_password_hash(user_data.password)
-    
+
     new_user = User(
-        email=user_data.email,
-        full_name=user_data.name,
+        email=email,
+        full_name=user_data.full_name,
         hashed_password=hashed_pw
     )
+
     db.add(new_user)
     await db.commit()
-    await db.refresh(new_user) # Repopulates new_user with db generated fields like id, created_at
+    await db.refresh(new_user)
 
     return SignupResponse(
         id=new_user.id,
         email=new_user.email,
-        full_name=new_user.full_name,
+        name=new_user.full_name,
         created_at=new_user.created_at
     )
