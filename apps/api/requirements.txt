@@ -16,3 +16,9 @@ langchain-community
 pymupdf
 pdfplumber
 pgvector
+google-genai
+python-multipart
+groq
+beautifulsoup4
+lxml
+httpx

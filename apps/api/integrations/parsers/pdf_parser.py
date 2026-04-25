@@ -1,7 +1,7 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 import pdfplumber
 import fitz
-from text_chunker import chunk_pages, normalize_chunks
+from integrations.parsers.text_chunker import chunk_pages, normalize_chunks
 
 KNOWN_HEADERS = ["fall", "spring", "required", "courses", "focus track", "depth", "breadth", "electives"] # Fill with headers that are commonly associated with important parts
 
