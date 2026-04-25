@@ -3,6 +3,8 @@ from pydantic import BaseModel, field_validator
 from typing import List, Optional, Literal
 from enum import Enum
 
+from integrations.parsers import pdf_parser
+
 router = APIRouter()
 
 
@@ -48,7 +50,7 @@ class IngestResponse(BaseModel):
     failed: int
 
 
-@router.post("", response_model=IngestResponse)
+@router.post("/ingest", response_model=IngestResponse)
 async def ingest_data(request: IngestRequest):
     """
     Ingest multiple data entries (PDFs or links) for processing.
@@ -63,6 +65,7 @@ async def ingest_data(request: IngestRequest):
         try:
             if entry.type == EntryType.PDF:
                 # TODO: call pdf_processor service
+                
                 message = f"PDF queued for processing: {entry.content[:60]}"
             else:
                 # TODO: call link_fetcher service
