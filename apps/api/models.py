@@ -132,3 +132,40 @@ class Comparison(Base):
     user = relationship("User", back_populates="comparisons")
     program_a = relationship("Program", foreign_keys=[program_a_id])
     program_b = relationship("Program", foreign_keys=[program_b_id])
+
+
+class ProgramAnalysis(Base):
+    __tablename__ = "program_analyses"
+
+    id               = Column(Integer, primary_key=True, index=True)
+    program_id       = Column(Integer, ForeignKey("programs.id"), nullable=False, unique=True, index=True)
+    overall_score    = Column(Float, nullable=True)
+    coverage_pct     = Column(Float, nullable=True)
+    missing_sections = Column(JSON, nullable=True)
+    score_breakdown  = Column(JSON, nullable=True)
+    status           = Column(String, default="pending")  # pending | processing | complete | failed | insufficient
+    analyzed_at      = Column(DateTime, nullable=True)
+    created_at       = Column(DateTime, server_default=func.now())
+    updated_at       = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    program          = relationship("Program", back_populates="analysis")
+    section_analyses = relationship("SectionAnalysis", back_populates="program_analysis", cascade="all, delete-orphan")
+
+
+class SectionAnalysis(Base):
+    __tablename__ = "section_analyses"
+
+    id                  = Column(Integer, primary_key=True, index=True)
+    program_analysis_id = Column(Integer, ForeignKey("program_analyses.id"), nullable=False, index=True)
+    section_label       = Column(String, nullable=False)
+    score               = Column(Float, nullable=True)
+    summary             = Column(Text, nullable=True)
+    strengths           = Column(JSON, nullable=True)
+    weaknesses          = Column(JSON, nullable=True)
+    missing_signals     = Column(JSON, nullable=True)
+    confidence          = Column(String, nullable=True)
+    insufficient        = Column(Boolean, default=False)
+    insufficient_reason = Column(String, nullable=True)
+    created_at          = Column(DateTime, server_default=func.now())
+
+    program_analysis = relationship("ProgramAnalysis", back_populates="section_analyses")
