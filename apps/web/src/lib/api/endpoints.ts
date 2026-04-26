@@ -53,19 +53,17 @@ export async function deleteSource(id: number) {
 
 // ── Ingest ────────────────────────────────────────────────────────────────────
 
-export async function ingestLink(programId: number, url: string) {
-  return apiClient('/api/v1/ingest/link', {
-    method: 'POST',
-    body: JSON.stringify({ program_id: programId, url }),
-  });
-}
-
-export async function ingestPdf(programId: number, file: File) {
+export async function ingestSources(programId: number, urls: string[], files: File[] = []) {
   const form = new FormData();
   form.append('program_id', String(programId));
-  form.append('file', file);
-  // Don't set Content-Type — browser sets it with the boundary
-  return apiClient('/api/v1/ingest/pdf', { method: 'POST', body: form, headers: {} });
+  if (urls.length > 0) {
+    form.append('links', urls.join(','));
+  }
+  for (const file of files) {
+    form.append('files', file);
+  }
+  // Don't set Content-Type — browser sets it with the multipart boundary
+  return apiClient('/api/v1/ingest/', { method: 'POST', body: form, headers: {} });
 }
 
 // ── Comparisons ───────────────────────────────────────────────────────────────
@@ -83,6 +81,10 @@ export async function createComparison(data: { title: string; program_a_id?: num
 
 export async function getComparison(id: string | number) {
   return apiClient(`/api/v1/comparisons/${id}`);
+}
+
+export async function runComparison(id: string | number) {
+  return apiClient(`/api/v1/comparisons/${id}/run`, { method: 'POST' });
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
