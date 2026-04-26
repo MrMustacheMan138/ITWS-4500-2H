@@ -97,13 +97,23 @@ async def ingest_sources(
                 tmp_path = tmp.name
 
             await process_source(source, tmp_path, db, section_override=section_override)
+            await db.refresh(source)
 
-            source_results.append(SourceResult(
-                source_id=source.id,
-                file_name=upload.filename,
-                source_type=source_type,
-                status="processed",
-            ))
+            if source.status == "failed":
+                source_results.append(SourceResult(
+                    source_id=source.id,
+                    file_name=upload.filename,
+                    source_type=source_type,
+                    status="failed",
+                    error="Processing failed",
+                ))
+            else:
+                source_results.append(SourceResult(
+                    source_id=source.id,
+                    file_name=upload.filename,
+                    source_type=source_type,
+                    status=source.status,
+                ))
 
         except Exception as e:
             print("Process failed...")
