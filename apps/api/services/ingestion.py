@@ -2,6 +2,7 @@
 
 import os
 import json
+import logging
 from google import genai
 from google.genai import types
 from typing import Optional
@@ -10,6 +11,8 @@ from models import Source, Chunk
 from integrations.parsers.pdf_parser import parse_file
 import httpx
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 # LLM Section Classifier
 VALID_SECTIONS = [
@@ -84,7 +87,7 @@ async def process_source(
     Parse a source file, organize text into sections, save as chunks.
     """
     try:
-        print(f"DEBUG: process_source called with {path_or_url}")
+        logger.debug("process_source called for source_id=%s type=%s", source.id, source.source_type)
 
         if source.source_type == "pdf":
             raw_chunks = parse_file(path_or_url)
@@ -109,11 +112,11 @@ async def process_source(
 
         if section_override:
             # Skip LLM organization — label everything as the override section
-            print(f"DEBUG: using section_override = {section_override}")
+            logger.debug("section_override=%r; skipping LLM organization", section_override)
             organized = {section_override: full_text}
         else:
             # Use Gemini to organize into sections
-            print("DEBUG: calling organize_text")
+            logger.debug("calling organize_text for source_id=%s", source.id)
             organized = await organize_text(full_text)
 
         if not organized:
