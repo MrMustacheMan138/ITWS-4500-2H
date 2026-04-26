@@ -237,8 +237,9 @@ export default function ResultsView() {
           </div>
           {results.section_scores.map((row, i) => {
             const aScore = row.score ?? 0
-            // TODO: when per-university section scores exist, swap this out
-            const winner = aScore >= 50 ? 'a' : 'b'
+            const bScore = (row as any).score_b ?? 0
+            const delta = aScore - bScore
+            const winner = delta >= 0 ? 'a' : 'b'
             return (
               <div
                 key={row.section_id}
@@ -249,7 +250,7 @@ export default function ResultsView() {
                   {row.section_id.replace(/_/g, ' ')}
                 </div>
                 <div className="text-[13px]" style={{ color: '#4d7cfe' }}>{aScore}</div>
-                <div className="text-[13px]" style={{ color: '#f5a623' }}>—</div>
+                <div className="text-[13px]" style={{ color: '#f5a623' }}>{bScore}</div>
                 <div>
                   <span
                     className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold"
@@ -259,7 +260,7 @@ export default function ResultsView() {
                       border: `1px solid ${winner === 'b' ? 'rgba(245,166,35,0.2)' : 'rgba(77,124,254,0.2)'}`,
                     }}
                   >
-                    {winner === 'b' ? 'B higher' : 'A higher'}
+                    {delta === 0 ? 'Tied' : winner === 'b' ? `B +${Math.abs(delta)}` : `A +${Math.abs(delta)}`}
                   </span>
                 </div>
               </div>
