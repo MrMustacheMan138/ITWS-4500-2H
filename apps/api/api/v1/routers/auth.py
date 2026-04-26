@@ -30,7 +30,7 @@ class LoginResponse(BaseModel):
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
-    full_name: str
+    name: str
 
 
 class SignupResponse(BaseModel):
@@ -57,7 +57,7 @@ async def login(credentials: LoginRequest, db: DbSession):
     return LoginResponse(
         id=user.id,
         email=user.email,
-        name=user.full_name,
+        name=user.name,
         is_admin=user.is_admin,
         access_token=token,
         token_type="bearer"
@@ -84,7 +84,7 @@ async def signup(user_data: SignupRequest, db: DbSession):
 
     new_user = User(
         email=email,
-        full_name=user_data.full_name,
+        name=user_data.name,
         hashed_password=hashed_pw
     )
 
@@ -95,6 +95,6 @@ async def signup(user_data: SignupRequest, db: DbSession):
     return SignupResponse(
         id=new_user.id,
         email=new_user.email,
-        name=new_user.full_name,
+        name=new_user.name,
         created_at=new_user.created_at
     )
