@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
 import { getComparisons, getSources, getPrograms } from '@/lib/api/endpoints'
+import { useSession } from 'next-auth/react'
 
 interface Comparison {
   id: number
@@ -33,8 +34,14 @@ export default function Dashboard() {
   const [sourceCount, setSourceCount] = useState(0)
   const [programCount, setProgramCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { status } = useSession()
 
   useEffect(() => {
+    if (status !== 'authenticated') {
+      setLoading(status === 'loading')
+      return
+    }
+
     Promise.all([
       getComparisons().catch(() => []),
       getSources().catch(() => []),
@@ -44,7 +51,7 @@ export default function Dashboard() {
       setSourceCount(sources.length)
       setProgramCount(progs.length)
     }).finally(() => setLoading(false))
-  }, [])
+  }, [status])
 
   const gapsTotal = comparisons.reduce((sum, c) => {
     try { return sum + (JSON.parse(c.comparison_results ?? '{}').gaps?.length ?? 0) }

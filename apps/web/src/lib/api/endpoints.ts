@@ -12,7 +12,7 @@ export async function login(email: string, password: string) {
 export async function signup(email: string, password: string, name: string) {
   return apiClient('/api/v1/auth/signup', {
     method: 'POST',
-    body: JSON.stringify({ email, password, full_name: name }),
+    body: JSON.stringify({ email, password, name: name }),
   });
 }
 

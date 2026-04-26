@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient, ApiError } from '@/lib/api/client'
+import { useSession } from 'next-auth/react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export default function ResultsView() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const comparisonId = searchParams.get('id')
+  const { status } = useSession()
 
   const [comparison, setComparison] = useState<Comparison | null>(null)
   const [programA, setProgramA] = useState<Program | null>(null)
@@ -81,6 +83,11 @@ export default function ResultsView() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (status !== 'authenticated') {
+      setIsLoading(status === 'loading')
+      return
+    }
+
     if (!comparisonId) {
       setIsLoading(false)
       return
@@ -107,7 +114,7 @@ export default function ResultsView() {
     }
 
     load()
-  }, [comparisonId])
+  }, [comparisonId, status])
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {

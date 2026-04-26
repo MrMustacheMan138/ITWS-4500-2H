@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
 import { getSources, deleteSource } from '@/lib/api/endpoints'
+import { useSession } from 'next-auth/react'
 
 interface Source {
   id: number
@@ -27,6 +28,7 @@ export default function SourcesPage() {
   const [error, setError]             = useState('')
   const [statusFilter, setStatusFilter]   = useState('')
   const [programFilter, setProgramFilter] = useState('')
+  const { status } = useSession()
 
   const load = async () => {
     setLoading(true)
@@ -44,7 +46,14 @@ export default function SourcesPage() {
     }
   }
 
-  useEffect(() => { load() }, [statusFilter, programFilter])
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      setLoading(status === 'loading')
+      return
+    }
+
+    load()
+  }, [status, statusFilter, programFilter])
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this source and all its chunks?')) return
