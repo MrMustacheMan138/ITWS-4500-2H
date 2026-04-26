@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
-import { getPrograms, ingestLink, ingestPdf } from '@/lib/api/endpoints'
+import { getPrograms, ingestSources } from '@/lib/api/endpoints'
+import { useSession } from 'next-auth/react'
 
 interface Program {
   id: number
@@ -34,8 +35,14 @@ export default function IngestPage() {
   const [queue, setQueue]             = useState<QueueEntry[]>([])
   const [submitting, setSubmitting]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const { status } = useSession()
 
   useEffect(() => {
+    if (status !== 'authenticated') {
+      setLoadingProgs(status === 'loading')
+      return
+    }
+
     setLoadingProgs(true)
     getPrograms()
       .then((data: Program[]) => {
@@ -44,7 +51,7 @@ export default function IngestPage() {
       })
       .catch(() => {})
       .finally(() => setLoadingProgs(false))
-  }, [])
+  }, [status])
 
   const addUrl = () => {
     const trimmed = urlInput.trim()
@@ -70,21 +77,21 @@ export default function IngestPage() {
     if (!programId) { alert('Select a program first.'); return }
     const pending = queue.filter(e => e.status === 'queued')
     if (!pending.length) return
+
+    const urls = pending.filter(e => e.type === 'url').map(e => e.label)
+    const files = pending.filter(e => e.type === 'pdf' && e.file).map(e => e.file as File)
+
     setSubmitting(true)
-    for (const entry of pending) {
-      patch(entry.id, { status: 'uploading' })
-      try {
-        if (entry.type === 'url') {
-          const res = await ingestLink(programId, entry.label)
-          patch(entry.id, { status: 'done', message: `${res.chunks_saved} chunks` })
-        } else if (entry.file) {
-          const res = await ingestPdf(programId, entry.file)
-          patch(entry.id, { status: 'done', message: `${res.chunks_saved} chunks` })
-        }
-      } catch (err: any) {
-        patch(entry.id, { status: 'error', message: err?.message ?? 'Failed' })
-      }
+
+    pending.forEach(entry => patch(entry.id, { status: 'uploading' }))
+
+    try {
+      const res = await ingestSources(programId, urls, files)
+      pending.forEach(entry => patch(entry.id, { status: 'done', message: `${res.sources_processed ?? res.chunks_saved ?? 'Done'}` }))
+    } catch (err: any) {
+      pending.forEach(entry => patch(entry.id, { status: 'error', message: err?.message ?? 'Failed' }))
     }
+
     setSubmitting(false)
   }
 
