@@ -10,9 +10,9 @@ export default function ResultsPage() {
       <div className="flex-1 ml-64 flex flex-col">
         <Header />
         <main className="flex-1 p-6">
-        <Suspense fallback={<div>Loading results...</div>}>
-          <ResultsView />
-        </Suspense>
+          <Suspense fallback={<div>Loading results...</div>}>
+            <ResultsView />
+          </Suspense>
         </main>
       </div>
     </div>
