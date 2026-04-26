@@ -9,7 +9,7 @@
 /apps/api/__pycache__
 
 # Environment Variables
-.env/
+.env
 
 
 .vscode/
