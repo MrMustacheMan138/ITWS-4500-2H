@@ -108,7 +108,7 @@ async def _call_groq(combined_doc: str, sections_found: list[str]) -> dict:
     prompt = f"""
     You are evaluating a university academic program for rigor and quality.
 
-    Grade each section from 1.0 to 10.0 (decimals allowed).
+    Grade each section from 1 to 100 (integers, decimals allowed).
     Determine if the program is theory-heavy, application-heavy, or balanced.
 
     Return ONLY valid JSON:
@@ -119,7 +119,7 @@ async def _call_groq(combined_doc: str, sections_found: list[str]) -> dict:
     "weaknesses": ["weakness 1", "weakness 2"],
     "improvements": ["improvement 1", "improvement 2"],
     "section_scores": {{
-        "<section_name>": 0.0
+        "<section_name>": 0
     }}
     }}
 
@@ -180,4 +180,4 @@ def _compute_score(section_scores: dict) -> float | None:
     raw_score       = weighted_sum / total_weight
     penalized_score = raw_score * (0.6 + 0.4 * coverage_ratio)
 
-    return round(penalized_score, 2)
+    return round(penalized_score, 1)

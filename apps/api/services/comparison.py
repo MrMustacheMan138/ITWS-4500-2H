@@ -316,8 +316,8 @@ def _fallback_result(name_a: str, name_b: str, data_a: dict, data_b: dict) -> di
     all_sections = set(breakdown_a.keys()) | set(breakdown_b.keys())
 
     for sec in all_sections:
-        sa = int(breakdown_a.get(sec, 50) * 10)  # analysis stores 0-10, convert to 0-100
-        sb = int(breakdown_b.get(sec, 50) * 10)
+        sa = int(breakdown_a.get(sec, 50))
+        sb = int(breakdown_b.get(sec, 50))
         section_scores.append({
             "section_id": sec.lower().replace(" ", "_"),
             "score": sa,
