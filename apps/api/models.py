@@ -141,7 +141,7 @@ class ProgramAnalysis(Base):
     id               = Column(Integer, primary_key=True, index=True)
     program_id       = Column(Integer, ForeignKey("programs.id"), nullable=False, unique=True, index=True)
     overall_score    = Column(Float, nullable=True)
-    orientation      = Column(String, nullable=True) # "theory-heavy" | "application-heavy"
+    orientation      = Column(String, nullable=True) # "theory-heavy" | "application-heavy" | "balanced"
     overall_summary  = Column(Text, nullable=True)
     strengths        = Column(JSON, nullable=True)
     weaknesses       = Column(JSON, nullable=True)
