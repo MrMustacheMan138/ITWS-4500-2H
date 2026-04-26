@@ -109,12 +109,12 @@ async def delete_program(program_id: int, db: DbSession, current_user: CurrentUs
 async def get_program_analysis(
     program_id: int,
     db: DbSession,
-    current_user: CurrentUser
+    current_user: CurrentUser,
 ):
     result = await db.execute(
         select(Program).where(
             Program.id == program_id,
-            Program.user_id == current_user.id
+            Program.user_id == current_user.id,
         )
     )
     program = result.scalars().first()

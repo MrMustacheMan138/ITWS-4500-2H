@@ -158,16 +158,19 @@ export default function CompareForm() {
   const handleRun = async () => {
     setError('')
 
-    // Basic validation
     if (!uniA.name.trim() || !uniB.name.trim()) {
       setError('Please enter names for both universities.')
+      return
+    }
+    if (uniA.sources.length === 0 && uniB.sources.length === 0) {
+      setError('Please add at least one source URL for either university.')
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // 1. Create a program record for each university
+      // 1. Create program records for both universities
       const [progA, progB] = await Promise.all([
         apiClient('/api/v1/programs/', {
           method: 'POST',
@@ -179,7 +182,7 @@ export default function CompareForm() {
         }),
       ])
 
-      // 2. Create the comparison record linking both programs
+      // 2. Create the comparison record
       const comparison = await apiClient('/api/v1/comparisons/', {
         method: 'POST',
         body: JSON.stringify({
@@ -189,21 +192,33 @@ export default function CompareForm() {
         }),
       })
 
-      // 3. Kick off ingest for each source URL (fire-and-forget, don't block navigation)
-      for (const url of uniA.sources) {
-        apiClient('/api/v1/ingest/link', {
-          method: 'POST',
-          body: JSON.stringify({ program_id: progA.id, url }),
-        }).catch(() => null)
-      }
-      for (const url of uniB.sources) {
-        apiClient('/api/v1/ingest/link', {
-          method: 'POST',
-          body: JSON.stringify({ program_id: progB.id, url }),
-        }).catch(() => null)
+      // 3. Ingest sources for both programs (must await — comparison engine needs the chunks)
+      const ingestPromises: Promise<unknown>[] = []
+
+      if (uniA.sources.length > 0) {
+        const formA = new FormData()
+        formA.append('program_id', String(progA.id))
+        formA.append('links', uniA.sources.join(','))
+        ingestPromises.push(
+          apiClient('/api/v1/ingest/', { method: 'POST', body: formA, headers: {} }).catch(() => null)
+        )
       }
 
-      // 4. Navigate to results
+      if (uniB.sources.length > 0) {
+        const formB = new FormData()
+        formB.append('program_id', String(progB.id))
+        formB.append('links', uniB.sources.join(','))
+        ingestPromises.push(
+          apiClient('/api/v1/ingest/', { method: 'POST', body: formB, headers: {} }).catch(() => null)
+        )
+      }
+
+      await Promise.all(ingestPromises)
+
+      // 4. Run the LLM comparison engine
+      await apiClient(`/api/v1/comparisons/${comparison.id}/run`, { method: 'POST' })
+
+      // 5. Navigate to results
       router.push(`/dashboard/results?id=${comparison.id}`)
 
     } catch (e) {
@@ -294,7 +309,7 @@ export default function CompareForm() {
           className="px-6 py-2.5 rounded-lg text-[15px] font-medium text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0"
           style={{ background: '#4d7cfe' }}
         >
-          {isSubmitting ? 'Creating…' : 'Run Comparison →'}
+          {isSubmitting ? 'Ingesting & Analyzing…' : 'Run Comparison →'}
         </button>
       </div>
     </div>
