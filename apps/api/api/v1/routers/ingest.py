@@ -18,70 +18,12 @@ DbSession = Annotated[AsyncSession, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _build_db_chunks(source: Source, raw_chunks: list[dict]) -> list[Chunk]:
-    """Convert parser output dicts into Chunk ORM objects."""
-    db_chunks = []
-    for idx, c in enumerate(raw_chunks):
-        content = c.get("content", "")
-        if not content:
-            continue
-        # Table content comes back as list[list[str]] — serialise to JSON string
-        if c.get("type") == "table" and isinstance(content, list):
-            content = json.dumps(content)
-        section = classify_by_keywords(content) if c.get("type") == "text" else None
-        db_chunks.append(
-            Chunk(
-                source_id=source.id,
-                chunk_index=idx,
-                text=content[:10_000],
-                section=section,
-                chunk_type=c.get("type", "text"),
-                page_number=c.get("page"),
-            )
-        )
-    return db_chunks
-
-
-async def _persist(
-    db: AsyncSession,
-    user_id: int,
-    program_id: int,
-    source_type: str,
-    source_url: Optional[str],
-    file_name: Optional[str],
-    all_chunks: list[dict],
-) -> Source:
-    """Create Source row, bulk-insert its chunks, commit, return Source."""
-    source = Source(
-        user_id=user_id,
-        program_id=program_id,
-        source_type=source_type,
-        source_url=source_url,
-        file_name=file_name,
-        status="processing",
-    )
-    db.add(source)
-    await db.flush()  # get source.id without a full commit
-
-# Response Schemas
-
 class SourceResult(BaseModel):
     source_id: int
     file_name: Optional[str]
     source_type: str
     status: str
     error: Optional[str] = None
-
-    return IngestResponse(
-        source_id=source.id,
-        status=source.status,
-        chunks_saved=len(all_chunks),
-        message=f"Ingested {len(all_chunks)} chunks from {body.url}",
-    )
 
 class IngestResponse(BaseModel):
     program_id: int
@@ -230,6 +172,7 @@ async def ingest_sources(
         analysis = await analyze_program(program_id, db)
         analysis_status = analysis.status
     except Exception as e:
+        print(f"DEBUG: analyze_program FAILED: {e}")
         analysis_status = "failed"
 
     return IngestResponse(
