@@ -12,7 +12,7 @@ Flow at comparison time:
 """
 from dataclasses import dataclass
 
-from section_rules import all_section_ids
+from domain.curriculum.section_rules import all_section_ids
 
 
 # ---------------------------------------------------------------------------
@@ -21,17 +21,13 @@ from section_rules import all_section_ids
 # These weights reflect how much each section contributes to the final rigor
 # score. Tune as the team converges on what "rigor" means for this product.
 
-SECTION_WEIGHTS: dict[str, float] = {
-    "course_schedule":       0.10,
-    "core_requirements":     0.20,
-    "specialization_paths":  0.15,
-    "electives":             0.05,
-    "credit_load":           0.15,
-    "capstone_research":     0.15,
-    "grading_assessment":    0.10,
-    "prerequisites_policy":  0.10,
+SECTION_WEIGHTS = {
+    "course schedule":  0.30,
+    "required courses": 0.25,
+    "concentration":    0.25,
+    "program overview": 0.15,
+    "accreditation":    0.05,
 }
-
 
 # ---------------------------------------------------------------------------
 # Per-section scoring criteria
@@ -40,48 +36,32 @@ SECTION_WEIGHTS: dict[str, float] = {
 # They tell the model what "more rigorous" looks like for that specific section.
 
 SECTION_CRITERIA: dict[str, str] = {
-    "course_schedule": (
+    "course schedule": (
         "More rigorous programs have dense, well-sequenced schedules with "
         "advanced courses appearing earlier. Light semesters with mostly "
         "electives are less rigorous."
     ),
-    "core_requirements": (
+    "required courses": (
         "More rigorous programs require a broad, deep set of core courses "
-        "(e.g., theory, systems, math) with no easy substitutions. Programs "
-        "with very few required core courses are less rigorous."
+        "with no easy substitutions. Programs with very few required core "
+        "courses are less rigorous."
     ),
-    "specialization_paths": (
-        "More rigorous programs offer multiple deep specialization tracks, "
+    "concentration": (
+        "More rigorous programs offer multiple deep specialization tracks "
         "each with several required advanced courses. Programs with one "
-        "shallow track or no tracks at all are less rigorous."
+        "shallow track or no tracks are less rigorous."
     ),
-    "electives": (
-        "More rigorous programs require technical/advanced electives from an "
-        "approved list of challenging courses. Programs that allow any course "
-        "to count as an elective are less rigorous."
+    "program overview": (
+        "More rigorous programs show clear learning outcomes, research "
+        "opportunities, and faculty expertise. Vague descriptions with no "
+        "measurable outcomes are less rigorous."
     ),
-    "credit_load": (
-        "More rigorous programs require a higher total credit count and a "
-        "heavier typical per-semester load in the major. Programs with low "
-        "total credits or light per-semester loads are less rigorous."
-    ),
-    "capstone_research": (
-        "More rigorous programs require a substantive capstone, thesis, or "
-        "research experience. Programs with no capstone requirement or only "
-        "a brief group project are less rigorous."
-    ),
-    "grading_assessment": (
-        "More rigorous programs enforce higher minimum GPAs in the major, "
-        "proctored exams, and strict grading policies. Lenient grading, "
-        "pass/fail options for core courses, and low minimum grades reduce rigor."
-    ),
-    "prerequisites_policy": (
-        "More rigorous programs have long, strictly-enforced prerequisite "
-        "chains. Programs where advanced courses can be taken without "
-        "building on earlier courses are less rigorous."
+    "accreditation": (
+        "More rigorous programs hold specialized accreditation (ABET, AACSB) "
+        "with evidence of outcome tracking. No accreditation or only "
+        "institutional accreditation is less rigorous."
     ),
 }
-
 
 # ---------------------------------------------------------------------------
 # Score container

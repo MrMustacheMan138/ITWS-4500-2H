@@ -39,22 +39,12 @@ from sqlalchemy import select
 from groq import Groq
 
 from models import Comparison, Program, ProgramAnalysis, Chunk, Source
+from domain.scoring.rigor_rubric import SECTION_WEIGHTS, SECTION_CRITERIA
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Section weights (mirror analysis.py — used for overall score calculation)
-# ---------------------------------------------------------------------------
-SECTION_WEIGHTS = {
-    "course schedule":  0.30,
-    "required courses": 0.25,
-    "concentration":    0.25,
-    "program overview": 0.15,
-    "accreditation":    0.05,
-}
-
-MAX_CHUNK_CHARS = 8_000   # chars of raw text sent per program when no analysis exists
-MAX_ANALYSIS_CHARS = 6_000  # chars of analysis summary sent when analysis exists
+MAX_CHUNK_CHARS = 8_000
+MAX_ANALYSIS_CHARS = 6_000
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +200,10 @@ async def _call_groq_comparison(
     baseline_a = data_a.get("overall_score") or 50
     baseline_b = data_b.get("overall_score") or 50
 
+    # Build rubric block from domain criteria
+    rubric_lines = [f"- {sid}: {desc}" for sid, desc in SECTION_CRITERIA.items()]
+    rubric_block = "\n".join(rubric_lines)
+
     prompt = f"""You are comparing two university academic programs for curricular rigor and quality.
 
 PROGRAM A:
@@ -217,6 +211,9 @@ PROGRAM A:
 
 PROGRAM B:
 {context_b}
+
+SCORING RUBRIC (use this to evaluate each section):
+{rubric_block}
 
 Your task: produce a detailed, balanced comparison. Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
 
