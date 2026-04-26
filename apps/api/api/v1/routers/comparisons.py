@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Annotated, Optional, List
+from datetime import datetime
 
 from database import get_db
 from models import Comparison, User
@@ -32,6 +33,7 @@ class ComparisonResponse(BaseModel):
     program_a_id: Optional[int]
     program_b_id: Optional[int]
     comparison_results: Optional[str]
+    created_at: datetime
 
     class Config:
         from_attributes = True
