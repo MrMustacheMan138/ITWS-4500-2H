@@ -1,20 +1,63 @@
-import Header from "@/components/common/header"
-import Sidebar from "@/components/common/sidebar"
+'use client'
+import { useEffect, useState } from 'react'
+import Header from '@/components/common/header'
+import Sidebar from '@/components/common/sidebar'
+import { getComparisons, getSources, getPrograms } from '@/lib/api/endpoints'
 
-const recentComparisons = [
-  { a: 'NYU', b: 'CMU',      program: 'B.S. Computer Science', date: 'Mar 11, 2026', verdict: 'CMU more rigorous',  scoreA: 74, scoreB: 87 },
-  { a: 'MIT', b: 'Stanford', program: 'B.S. Computer Science', date: 'Mar 9, 2026',  verdict: 'MIT more rigorous',  scoreA: 91, scoreB: 88 },
-  { a: 'RPI', b: 'RIT',      program: 'B.S. Computer Science', date: 'Mar 7, 2026',  verdict: 'RPI more rigorous',  scoreA: 79, scoreB: 73 },
-]
+interface Comparison {
+  id: number
+  title: string
+  program_a_id: number | null
+  program_b_id: number | null
+  comparison_results: string | null
+  created_at: string
+}
 
-const stats = [
-  { label: 'Comparisons Run',   value: '12', icon: '▦' },
-  { label: 'Sources Analyzed',  value: '48', icon: '📂' },
-  { label: 'Universities',      value: '8',  icon: '🏛' },
-  { label: 'Gaps Identified',   value: '31', icon: '◈' },
-]
+function parseVerdict(raw: string | null) {
+  try {
+    if (!raw) return { verdict: '—', scoreA: 0, scoreB: 0 }
+    const r = JSON.parse(raw)
+    return { verdict: r.verdict ?? '—', scoreA: r.score_a ?? 0, scoreB: r.score_b ?? 0 }
+  } catch {
+    return { verdict: '—', scoreA: 0, scoreB: 0 }
+  }
+}
+
+function abbr(title: string) {
+  const m = title.match(/^(.+?)\s+vs\s+(.+?)(?:\s+[—–-]|$)/i)
+  return m ? { a: m[1].trim(), b: m[2].trim() } : { a: 'A', b: 'B' }
+}
 
 export default function Dashboard() {
+  const [comparisons, setComparisons] = useState<Comparison[]>([])
+  const [sourceCount, setSourceCount] = useState(0)
+  const [programCount, setProgramCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      getComparisons().catch(() => []),
+      getSources().catch(() => []),
+      getPrograms().catch(() => []),
+    ]).then(([comps, sources, progs]) => {
+      setComparisons(comps)
+      setSourceCount(sources.length)
+      setProgramCount(progs.length)
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const gapsTotal = comparisons.reduce((sum, c) => {
+    try { return sum + (JSON.parse(c.comparison_results ?? '{}').gaps?.length ?? 0) }
+    catch { return sum }
+  }, 0)
+
+  const stats = [
+    { label: 'Comparisons Run',  value: loading ? '…' : String(comparisons.length), icon: '▦' },
+    { label: 'Sources Analyzed', value: loading ? '…' : String(sourceCount),         icon: '📂' },
+    { label: 'Programs',         value: loading ? '…' : String(programCount),         icon: '🏛' },
+    { label: 'Gaps Identified',  value: loading ? '…' : String(gapsTotal),            icon: '◈' },
+  ]
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -23,7 +66,6 @@ export default function Dashboard() {
         <main className="flex-1 p-6">
           <div className="max-w-5xl mx-auto">
 
-            {/* Welcome */}
             <div className="mb-8">
               <h1 className="text-2xl font-bold mb-1" style={{ color: '#e8edf8' }}>Welcome back 👋</h1>
               <p style={{ color: '#6b7a9e', fontSize: 14 }}>Here's an overview of your curriculum comparisons.</p>
@@ -51,49 +93,64 @@ export default function Dashboard() {
                 </a>
               </div>
 
-              {recentComparisons.map((c, i) => (
-                <div
-                  key={i}
-                  className="flex items-center px-6 py-4 transition-colors cursor-pointer hover:bg-[rgba(255,255,255,0.02)]"
-                  style={{ borderBottom: i < recentComparisons.length - 1 ? '1px solid #1e2740' : 'none' }}
-                >
-                  {/* Unis */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[15px] font-bold" style={{ color: '#4d7cfe' }}>{c.a}</span>
-                      <span style={{ color: '#3d4d6e' }}>vs</span>
-                      <span className="text-[15px] font-bold" style={{ color: '#f5a623' }}>{c.b}</span>
-                    </div>
-                    <div className="text-[12px]" style={{ color: '#6b7a9e' }}>{c.program} · {c.date}</div>
-                  </div>
-
-                  {/* Scores */}
-                  <div className="flex items-center gap-6 mr-6">
-                    <div className="text-center">
-                      <div className="text-[20px] font-bold" style={{ color: '#4d7cfe' }}>{c.scoreA}</div>
-                      <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{c.a}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[20px] font-bold" style={{ color: '#f5a623' }}>{c.scoreB}</div>
-                      <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{c.b}</div>
-                    </div>
-                  </div>
-
-                  {/* Verdict */}
-                  <div className="mr-6">
-                    <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(77,124,254,0.1)', color: '#6b8fff', border: '1px solid rgba(77,124,254,0.2)' }}>
-                      {c.verdict}
-                    </span>
-                  </div>
-
-                  {/* Arrow */}
-                  <a href="/dashboard/results">
-                    <button className="px-3 py-1.5 rounded-lg text-[12px] transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e2740', color: '#6b7a9e' }}>
-                      View →
-                    </button>
-                  </a>
+              {loading ? (
+                <div className="flex items-center justify-center py-12" style={{ color: '#3d4d6e' }}>
+                  <span className="text-[13px]">Loading…</span>
                 </div>
-              ))}
+              ) : comparisons.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12" style={{ color: '#3d4d6e' }}>
+                  <span style={{ fontSize: 28, marginBottom: 8 }}>▦</span>
+                  <p className="text-[13px]">No comparisons yet — start one above</p>
+                </div>
+              ) : (
+                comparisons.map((c, i) => {
+                  const { a, b } = abbr(c.title)
+                  const { verdict, scoreA, scoreB } = parseVerdict(c.comparison_results)
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+                      style={{ borderBottom: i < comparisons.length - 1 ? '1px solid #1e2740' : 'none' }}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[15px] font-bold" style={{ color: '#4d7cfe' }}>{a}</span>
+                          <span style={{ color: '#3d4d6e' }}>vs</span>
+                          <span className="text-[15px] font-bold" style={{ color: '#f5a623' }}>{b}</span>
+                        </div>
+                        <div className="text-[12px]" style={{ color: '#6b7a9e' }}>
+                          {c.title} · {new Date(c.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 mr-6">
+                        <div className="text-center">
+                          <div className="text-[20px] font-bold" style={{ color: '#4d7cfe' }}>{scoreA || '—'}</div>
+                          <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{a.slice(0, 6)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[20px] font-bold" style={{ color: '#f5a623' }}>{scoreB || '—'}</div>
+                          <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{b.slice(0, 6)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mr-6">
+                        <span className="px-3 py-1 rounded-full text-[11px] font-semibold"
+                              style={{ background: 'rgba(77,124,254,0.1)', color: '#6b8fff', border: '1px solid rgba(77,124,254,0.2)' }}>
+                          {verdict}
+                        </span>
+                      </div>
+
+                      <a href={`/dashboard/results?id=${c.id}`}>
+                        <button className="px-3 py-1.5 rounded-lg text-[12px] transition-colors"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e2740', color: '#6b7a9e' }}>
+                          View →
+                        </button>
+                      </a>
+                    </div>
+                  )
+                })
+              )}
             </div>
 
           </div>
