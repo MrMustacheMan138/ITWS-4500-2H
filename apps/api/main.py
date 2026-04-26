@@ -2,7 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routers import auth, ingest, sources, programs, comparisons
+from api.v1.routers import auth, ingest, sources, programs, comparisons, chat
 from database import init_db
 import models
 
@@ -14,7 +14,6 @@ async def lifespan(app: FastAPI):
    yield
 
 app = FastAPI(title="Web Science API", version="1.0.0", lifespan=lifespan)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +33,7 @@ app.include_router(ingest.router, prefix="/api/v1/ingest", tags=["ingest"])
 app.include_router(sources.router, prefix="/api/v1/sources", tags=["sources"])
 app.include_router(programs.router, prefix="/api/v1/programs", tags=["programs"])
 app.include_router(comparisons.router, prefix="/api/v1/comparisons", tags=["comparisons"])
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
 
 @app.get("/")
 async def root():

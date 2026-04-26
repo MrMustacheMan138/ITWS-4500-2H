@@ -84,3 +84,15 @@ export async function createComparison(data: { title: string; program_a_id?: num
 export async function getComparison(id: string | number) {
   return apiClient(`/api/v1/comparisons/${id}`);
 }
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+
+export async function sendChatMessage(
+  message: string,
+  history: { role: 'user' | 'model'; content: string }[] = []
+) {
+  return apiClient('/api/v1/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  });
+}
