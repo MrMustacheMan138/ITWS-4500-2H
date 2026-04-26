@@ -1,5 +1,5 @@
 from typing import List, Dict
-from apps.api.integrations.ai.client import chat_reply
+from integrations.ai.client import chat_reply
 
 # Chatbot wrapper function
 async def chatbot (
