@@ -21,16 +21,14 @@ from domain.curriculum.section_rules import all_section_ids
 # These weights reflect how much each section contributes to the final rigor
 # score. Tune as the team converges on what "rigor" means for this product.
 
-SECTION_WEIGHTS: dict[str, float] = {
-    "course_schedule":       0.10,
-    "core_requirements":     0.20,
-    "specialization_paths":  0.15,
-    "electives":             0.05,
-    "credit_load":           0.15,
-    "capstone_research":     0.15,
-    "grading_assessment":    0.10,
-    "prerequisites_policy":  0.10,
+SECTION_WEIGHTS = {
+    "course schedule":  0.30,
+    "required courses": 0.25,
+    "concentration":    0.25,
+    "program overview": 0.15,
+    "accreditation":    0.05,
 }
+
 
 
 # ---------------------------------------------------------------------------
