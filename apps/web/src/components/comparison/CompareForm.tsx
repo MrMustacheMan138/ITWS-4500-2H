@@ -189,7 +189,21 @@ export default function CompareForm() {
         }),
       })
 
-      // 3. Navigate to results, passing the comparison id so ResultsView can fetch it
+      // 3. Kick off ingest for each source URL (fire-and-forget, don't block navigation)
+      for (const url of uniA.sources) {
+        apiClient('/api/v1/ingest/link', {
+          method: 'POST',
+          body: JSON.stringify({ program_id: progA.id, url }),
+        }).catch(() => null)
+      }
+      for (const url of uniB.sources) {
+        apiClient('/api/v1/ingest/link', {
+          method: 'POST',
+          body: JSON.stringify({ program_id: progB.id, url }),
+        }).catch(() => null)
+      }
+
+      // 4. Navigate to results
       router.push(`/dashboard/results?id=${comparison.id}`)
 
     } catch (e) {
