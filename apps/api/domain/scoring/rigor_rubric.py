@@ -12,7 +12,7 @@ Flow at comparison time:
 """
 from dataclasses import dataclass
 
-from section_rules import all_section_ids
+from domain.curriculum.section_rules import all_section_ids
 
 
 # ---------------------------------------------------------------------------
