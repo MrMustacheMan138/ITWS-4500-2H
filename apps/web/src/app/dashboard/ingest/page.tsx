@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
 import { getPrograms, ingestLink, ingestPdf } from '@/lib/api/endpoints'
+import { useSession } from 'next-auth/react'
 
 interface Program {
   id: number
@@ -34,8 +35,14 @@ export default function IngestPage() {
   const [queue, setQueue]             = useState<QueueEntry[]>([])
   const [submitting, setSubmitting]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const { status } = useSession()
 
   useEffect(() => {
+    if (status !== 'authenticated') {
+      setLoadingProgs(status === 'loading')
+      return
+    }
+
     setLoadingProgs(true)
     getPrograms()
       .then((data: Program[]) => {
@@ -44,7 +51,7 @@ export default function IngestPage() {
       })
       .catch(() => {})
       .finally(() => setLoadingProgs(false))
-  }, [])
+  }, [status])
 
   const addUrl = () => {
     const trimmed = urlInput.trim()

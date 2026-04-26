@@ -1,13 +1,11 @@
 import os
 from google import genai
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_2")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-lite")
 
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not set")
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 async def chat_reply(message: str, history: list[dict] | None = None) -> str:
     """

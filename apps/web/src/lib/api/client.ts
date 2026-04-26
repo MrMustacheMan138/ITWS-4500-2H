@@ -1,3 +1,5 @@
+import { getSession } from 'next-auth/react';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export class ApiError extends Error {
@@ -14,15 +16,18 @@ export class ApiError extends Error {
 export async function apiClient(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+  const headers = new Headers(options.headers);
 
-  // Merge headers
-  const headers = {
-    ...defaultHeaders,
-    ...options.headers,
-  };
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const session = await getSession();
+  const accessToken = session?.accessToken;
+
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
 
   try {
     const response = await fetch(url, {
