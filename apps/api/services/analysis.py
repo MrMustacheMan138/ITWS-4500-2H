@@ -7,16 +7,9 @@ from groq import Groq
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models import Source, Chunk, ProgramAnalysis
+from domain.scoring.rigor_rubric import SECTION_WEIGHTS, SECTION_CRITERIA
 
 MIN_WORDS = 100
-
-SECTION_WEIGHTS = {
-    "course schedule":  0.30,
-    "required courses": 0.25,
-    "concentration":    0.25,
-    "program overview": 0.15,
-    "accreditation":    0.05,
-}
 
 # Section Analysis (LLM call)
 async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
@@ -74,9 +67,15 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
         await db.commit()
         return analysis
 
+    # Build per-section rubric guidance for the prompt
+    rubric_lines = []
+    for section_id, criteria in SECTION_CRITERIA.items():
+        rubric_lines.append(f"- {section_id}: {criteria}")
+    rubric_block = "\n".join(rubric_lines)
+
     # Single Groq call
     sections_found = list(section_texts.keys())
-    result_dict = await _call_groq(combined_doc, sections_found)
+    result_dict = await _call_groq(combined_doc, sections_found, rubric_block)
 
     if not result_dict or result_dict.get("insufficient"):
         analysis.status      = "insufficient"
@@ -102,12 +101,14 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
     return analysis
 
 # Program Analysis (orchestrator)
-async def _call_groq(combined_doc: str, sections_found: list[str]) -> dict:
+async def _call_groq(combined_doc: str, sections_found: list[str], rubric_block: str = "") -> dict:
     sections_str = ", ".join(sections_found)
+
+    rubric_section = f"\nScoring rubric per section:\n{rubric_block}\n" if rubric_block else ""
 
     prompt = f"""
     You are evaluating a university academic program for rigor and quality.
-
+{rubric_section}
     Grade each section from 1.0 to 10.0 (decimals allowed).
     Determine if the program is theory-heavy, application-heavy, or balanced.
 
