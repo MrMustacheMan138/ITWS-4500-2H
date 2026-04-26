@@ -29,87 +29,56 @@ class Section:
 
 SECTIONS: list[Section] = [
     Section(
-        id="course_schedule",
+        id="course schedule",
         name="Course Schedule",
         description=(
             "The semester-by-semester plan of courses, including fall and spring "
             "offerings, course numbers, credit hours per term, and sequencing. "
             "Covers what a typical student takes each semester."
         ),
-        keywords=["fall", "spring", "semester", "schedule", "year 1", "sophomore", "junior", "senior"],
+        keywords=["fall", "spring", "semester", "schedule", "year 1", "sophomore", "junior", "senior", "first year", "second year"],
     ),
     Section(
-        id="core_requirements",
-        name="Core Requirements",
+        id="required courses",
+        name="Required Courses",
         description=(
             "Required foundational courses that every student in the program must "
             "complete. Includes math prerequisites, intro sequences, and core "
             "discipline courses with no substitution allowed."
         ),
-        keywords=["required", "core", "mandatory", "prerequisite", "foundation"],
+        keywords=["required", "core", "mandatory", "prerequisite", "foundation", "credit hours", "credits"],
     ),
     Section(
-        id="specialization_paths",
-        name="Specialization Paths",
+        id="concentration",
+        name="Concentration",
         description=(
             "Optional tracks, concentrations, focus areas, or depth options. "
             "Covers how many specializations are offered, what each consists of, "
             "and how selective or deep each track is."
         ),
-        keywords=["concentration", "track", "focus area", "specialization", "depth", "breadth"],
+        keywords=["concentration", "track", "focus area", "specialization", "depth", "breadth", "elective"],
     ),
     Section(
-        id="electives",
-        name="Electives",
+        id="program overview",
+        name="Program Overview",
         description=(
-            "Free electives, technical electives, and non-core course choices. "
-            "Includes the number of elective credits required, restrictions on "
-            "what counts, and availability of advanced electives."
+            "General program description, learning outcomes, faculty expertise, "
+            "research opportunities, and professional development components. "
+            "Indicates the program's pedagogical orientation."
         ),
-        keywords=["elective", "optional", "free choice", "approved list"],
+        keywords=["learning outcomes", "faculty", "program goals", "description", "research", "internship", "career"],
     ),
     Section(
-        id="credit_load",
-        name="Credit Load & Hours",
+        id="accreditation",
+        name="Accreditation",
         description=(
-            "Total credit hours required to graduate, typical credit load per "
-            "semester, and credit distribution across subject areas. Also covers "
-            "any minimum/maximum credit constraints per term."
+            "Accrediting bodies, standards, certifications, and outcome tracking. "
+            "Indicates the external validation of program quality."
         ),
-        keywords=["credit hour", "units", "credits", "total credits", "credit load"],
-    ),
-    Section(
-        id="capstone_research",
-        name="Capstone & Research",
-        description=(
-            "Senior design projects, capstone courses, thesis requirements, "
-            "undergraduate research opportunities, and independent study options. "
-            "Indicates the degree to which the program requires substantive "
-            "project or research work."
-        ),
-        keywords=["capstone", "senior design", "thesis", "research", "independent study", "project"],
-    ),
-    Section(
-        id="grading_assessment",
-        name="Grading & Assessment",
-        description=(
-            "Grading policies, minimum GPA requirements, exam structures, and "
-            "assessment methods. Indicates the academic standards enforced on "
-            "students throughout the program."
-        ),
-        keywords=["gpa", "grading", "minimum grade", "exam", "assessment", "pass/fail"],
-    ),
-    Section(
-        id="prerequisites_policy",
-        name="Prerequisites Policy",
-        description=(
-            "How prerequisites are enforced, which courses require what, and the "
-            "depth of the prerequisite chains. A program with long, strict "
-            "prerequisite chains is typically more rigorous."
-        ),
-        keywords=["prerequisite", "pre-req", "corequisite", "required before"],
+        keywords=["accreditation", "abet", "standards", "certifications", "accredited"],
     ),
 ]
+
 
 
 # Fast lookup by id
