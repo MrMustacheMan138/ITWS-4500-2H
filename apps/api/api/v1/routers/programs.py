@@ -1,14 +1,11 @@
 """
-Program CRUD endpoints.
+Program management endpoints.
 """
-
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Annotated, Optional, List
-from datetime import datetime
-
 from database import get_db
 from models import Program, User, ProgramAnalysis
 from api.v1.deps import get_current_user
@@ -20,24 +17,22 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 class ProgramCreate(BaseModel):
     name: str
-    institution: Optional[str] = None
     description: Optional[str] = None
+    institution: Optional[str] = None
 
 
 class ProgramUpdate(BaseModel):
     name: Optional[str] = None
-    institution: Optional[str] = None
     description: Optional[str] = None
+    institution: Optional[str] = None
 
 
 class ProgramResponse(BaseModel):
     id: int
     user_id: int
     name: str
-    institution: Optional[str]
     description: Optional[str]
-    created_at: datetime
-    updated_at: datetime
+    institution: Optional[str]
 
     class Config:
         from_attributes = True
@@ -45,35 +40,27 @@ class ProgramResponse(BaseModel):
 
 @router.get("/", response_model=List[ProgramResponse])
 async def get_programs(db: DbSession, current_user: CurrentUser):
-    result = await db.execute(
-        select(Program).where(Program.user_id == current_user.id)
-    )
+    result = await db.execute(select(Program).where(Program.user_id == current_user.id))
     return result.scalars().all()
 
 
 @router.post("/", response_model=ProgramResponse)
-async def create_program(
-    program_data: ProgramCreate,
-    db: DbSession,
-    current_user: CurrentUser,
-):
-    program = Program(
+async def create_program(program_data: ProgramCreate, db: DbSession, current_user: CurrentUser):
+    new_program = Program(
         user_id=current_user.id,
         name=program_data.name,
-        institution=program_data.institution,
         description=program_data.description,
+        institution=program_data.institution,
     )
-    db.add(program)
+    db.add(new_program)
     await db.commit()
-    await db.refresh(program)
-    return program
+    await db.refresh(new_program)
+    return new_program
 
 
 @router.get("/{program_id}", response_model=ProgramResponse)
 async def get_program(program_id: int, db: DbSession, current_user: CurrentUser):
-    result = await db.execute(
-        select(Program).where(Program.id == program_id)
-    )
+    result = await db.execute(select(Program).where(Program.id == program_id))
     program = result.scalars().first()
     if program is None:
         raise HTTPException(status_code=404, detail="Program not found")
@@ -89,9 +76,7 @@ async def update_program(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    result = await db.execute(
-        select(Program).where(Program.id == program_id)
-    )
+    result = await db.execute(select(Program).where(Program.id == program_id))
     program = result.scalars().first()
     if program is None:
         raise HTTPException(status_code=404, detail="Program not found")
@@ -99,10 +84,10 @@ async def update_program(
         raise HTTPException(status_code=403, detail="Not authorized")
     if program_data.name is not None:
         program.name = program_data.name
-    if program_data.institution is not None:
-        program.institution = program_data.institution
     if program_data.description is not None:
         program.description = program_data.description
+    if program_data.institution is not None:
+        program.institution = program_data.institution
     await db.commit()
     await db.refresh(program)
     return program
@@ -110,9 +95,7 @@ async def update_program(
 
 @router.delete("/{program_id}", status_code=204)
 async def delete_program(program_id: int, db: DbSession, current_user: CurrentUser):
-    result = await db.execute(
-        select(Program).where(Program.id == program_id)
-    )
+    result = await db.execute(select(Program).where(Program.id == program_id))
     program = result.scalars().first()
     if program is None:
         raise HTTPException(status_code=404, detail="Program not found")
@@ -157,5 +140,5 @@ async def get_program_analysis(
         "weaknesses":      analysis.weaknesses,
         "improvements":    analysis.improvements,
         "score_breakdown": analysis.score_breakdown,
-        "analyzed_at":     analysis.analyzed_at,
+        "analyzed_at":     str(analysis.analyzed_at) if analysis.analyzed_at else None,
     }
