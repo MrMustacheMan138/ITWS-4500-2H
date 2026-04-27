@@ -4,13 +4,17 @@ This repository follows a layered architecture with a clear separation between:
 
 Presentation (Next.js web UI)
 
-Business logic (FastAPI services + domain rules)
+Application logic (FastAPI routers + service scaffolds)
 
-Data access (PostgreSQL / repositories + object storage integrations)
+Business logic (domain scoring and curriculum rules)
 
-Infrastructure (Docker Compose, volumes, deployment configuration)
+Data access (SQLAlchemy models + PostgreSQL)
 
-The goal is to keep each layer focused on one responsibility so the codebase stays maintainable as features grow (ingestion, comparisons, RAG, citations, auth, etc.).
+Integrations (PDF/URL parsing, chunking, embeddings, LLM hooks)
+
+Infrastructure (Docker Compose, environment config, deployment)
+
+The goal is to keep each layer focused on one responsibility so the codebase stays maintainable as the ingestion and comparison pipeline grows.
 
 ## Current repo structure:
 Current top-level folders:
@@ -33,14 +37,23 @@ ITWS-4500-2H/
 │  │  │     ├─ deps.py
 │  │  │     └─ routers/
 │  │  │        ├─ auth.py
+│  │  │        ├─ comparisons.py
 │  │  │        ├─ ingest.py
+│  │  │        ├─ programs.py
 │  │  │        └─ sources.py
 │  │  ├─ core/
+│  │  │  ├─ auth.py
+│  │  │  └─ config.py
+│  │  ├─ domain/
+│  │  │  ├─ curriculum/
+│  │  │  └─ scoring/
 │  │  ├─ integrations/
-│  │  │  └─ llm/
+│  │  │  ├─ embeddings/
+│  │  │  ├─ llm/
+│  │  │  └─ parsers/
 │  │  ├─ services/
-│  │  │  ├─ link_fetcher.py
-│  │  │  └─ pdf_processor.py
+│  │  │  ├─ analysis.py
+│  │  │  └─ ingestion.py
 │  │  ├─ Dockerfile
 │  │  └─ Dockerfile.dev
 │  └─ web/
@@ -71,7 +84,6 @@ ITWS-4500-2H/
 │     ├─ tsconfig.json
 │     ├─ Dockerfile
 │     └─ Dockerfile.dev
-├─ data/
 ├─ docs/
 ├─ docker-compose.yml
 ├─ docker-compose.dev.yml
@@ -82,17 +94,17 @@ ITWS-4500-2H/
 ### Current backend file layout
 
 **Layer Responsibilities:**
-* Routers (API layer): HTTP handling only (request parsing/validation)
-* Services (application layer): use-case orchestration and ingestion helpers
-* Domain (business layer): curriculum logic, comparison/scoring rules, RAG citation requirements (scaffolded)
-* Data (persistence layer): database models + DB session management
-* Integrations (infrastructure layer): external services such as LLM connectors
+* Routers (API layer): HTTP handling, validation, and response shaping
+* Services (application layer): ingestion and analysis orchestration scaffolds
+* Domain (business layer): curriculum section rules and rigor scoring
+* Data (persistence layer): SQLAlchemy models and DB session management
+* Integrations (infrastructure layer): PDF/URL parsing, chunking, embeddings, and LLM hooks
 
 ``` Plain Text
 apps/api/
 ├─ main.py                         # FastAPI app initialization, CORS middleware, router registration, startup events
 ├─ database.py                     # SQLAlchemy async engine, session factory, Base declarative, get_db() dependency
-├─ models.py                       # SQLAlchemy ORM models (includes persisted entities like users/comparisons)
+├─ models.py                       # SQLAlchemy ORM models for users, programs, sources, and comparisons
 ├─ requirements.txt                # Python dependencies (fastapi, uvicorn, sqlalchemy, asyncpg, pydantic, etc.)
 │
 ├─ api/
@@ -102,35 +114,50 @@ apps/api/
 │     ├─ deps.py                   # Shared dependencies for routers
 │     └─ routers/                  # API endpoint handlers
 │        ├─ __init__.py
-│        ├─ auth.py                # Authentication endpoints: /login and /register
-│        ├─ ingest.py              # Ingestion endpoint model/route scaffold
-│        └─ sources.py             # Source-management route placeholder (currently empty)
+│        ├─ auth.py                # Authentication endpoints for login and signup
+│        ├─ comparisons.py         # Comparison CRUD endpoints
+│        ├─ ingest.py              # Ingest request/response schema and queueing scaffold
+│        ├─ programs.py            # Program CRUD endpoints
+│        └─ sources.py             # Source CRUD endpoints and pending status creation
 │
-├─ services/                       # Use-case helpers (link fetching, PDF processing)
-├─ core/                           # Core utilities scaffold (currently empty)
-├─ integrations/                   # External service integrations
-│  └─ llm/                         # LLM integration scaffold
+├─ core/                           # Auth and configuration helpers
+├─ domain/                         # Curriculum section rules and rigor scoring
+├─ integrations/                   # External parsing/chunking/embedding/LLM helpers
+│  ├─ embeddings/
+│  ├─ llm/
+│  └─ parsers/
+├─ services/                       # Ingestion and analysis orchestration scaffolds
 │
 ├─ Dockerfile                      # Production Docker build
 ├─ Dockerfile.dev                  # Development Docker build with hot reload
-└─ .env                            # Environment variables (DATABASE_URL, POSTGRES_* configs)
+└─ .env                            # Environment variables (DATABASE_URL, JWT, PostgreSQL config)
 ```
 
 **Key Functional Files:**
 
-- **`main.py`**: Entry point for FastAPI application. Initializes FastAPI, configures CORS for frontend communication, creates database tables on startup, and registers currently active routers.
+- **`main.py`**: Entry point for the FastAPI application. Initializes FastAPI, configures CORS for the frontend, creates database tables on startup, and mounts the active v1 routers.
 
-- **`database.py`**: Database configuration and connection management. Builds async PostgreSQL connection URL from environment variables, creates async SQLAlchemy engine, configures async session factory, defines Base class for ORM models, and provides `get_db()` dependency for route handlers.
+- **`database.py`**: Database configuration and connection management. Builds the async PostgreSQL connection from environment variables, creates the SQLAlchemy async engine, configures the session factory, defines `Base`, and provides `get_db()`.
 
-- **`models.py`**: SQLAlchemy ORM model definitions used by the backend API and authentication logic.
+- **`models.py`**: SQLAlchemy ORM model definitions for `User`, `Program`, `Source`, and `Comparison`.
 
-- **`api/v1/routers/auth.py`**: Authentication endpoints. Defines request/response schemas and implements login + registration flows with password hashing and DB-backed user lookup.
+- **`api/v1/routers/auth.py`**: Authentication endpoints. Implements login and signup with password hashing, DB-backed user lookup, and token creation.
 
-- **`api/v1/routers/ingest.py`**: Data ingestion endpoint scaffold. Defines typed ingest payloads and response models for handling link/PDF entries.
+- **`api/v1/routers/ingest.py`**: Ingest route scaffold. Accepts typed PDF/link entries and currently returns queued/success status messages.
 
-- **`api/v1/routers/sources.py`**: Placeholder for data source management endpoints. File exists but currently contains no implementation.
+- **`api/v1/routers/sources.py`**: Source management endpoints. Creates, lists, updates, and deletes source records for the current user.
 
-- **Router mounting note**: `main.py` currently mounts the auth router at `/api/auth`; other router files exist but are not mounted yet.
+- **`services/ingestion.py`**: Ingestion orchestration scaffold for parsing, chunking, embeddings, section analysis, and score persistence.
+
+- **`services/analysis.py`**: Section analysis scaffold for LLM-based section scoring and JSON parsing.
+
+- **`integrations/parsers/pdf_parser.py`**: PDF parsing helper that extracts table and text chunks from uploaded documents.
+
+- **`integrations/parsers/link_parser.py`**: URL parsing helper that fetches a page and returns chunked readable text.
+
+- **`integrations/parsers/document_parser.py`**: LLM parsing scaffold for turning raw text into structured curriculum sections.
+
+- **`integrations/embeddings/chunker.py`**: Chunking and embedding scaffold used by the ingestion pipeline.
 
 ### Current frontend file layout
 
@@ -145,8 +172,8 @@ apps/web/
 ├─ src/
 │  ├─ app/
 │  │  ├─ (auth)/
-│  │  │  ├─ login/page.tsx           # Business logic of login page
-│  │  │  └─ signup/page.tsx          # Business logic of signup page
+│  │  │  ├─ login/page.tsx           # Login page shell
+│  │  │  └─ signup/page.tsx          # Signup page shell
 │  │  │
 │  │  ├─ dashboard/
 │  │  │  ├─ page.tsx                 # Dashboard home for user workflows
@@ -156,16 +183,16 @@ apps/web/
 │  │  │  └─ results/page.tsx         # Comparison/output results view
 │  │  ├─ api/
 │  │  │  └─ auth/[...nextauth]/route.ts  # NextAuth handlers (frontend auth API route)
-│  │  ├─ globals.css                 # Global styles for entire app (imported by layout.tsx)
+│  │  ├─ globals.css                 # Global styles for entire app
 │  │  ├─ layout.tsx                  # Root layout shell + provider wiring
-│  │  ├─ page.tsx                    # Landing page (first page)
-│  │  └─ providers.tsx               # SessionProvider + any global providers
+│  │  ├─ page.tsx                    # Landing page
+│  │  └─ providers.tsx               # SessionProvider and shared providers
 │  │
-│  ├─ components/                    # Technical components to import into business logic files
-│  │  ├─ comparison/                 # Side-by-side views, compare forms, results views
-│  │  ├─ chat/                       # AI assistant UI
-│  │  ├─ auth/                       # Login/sign-up form components
-│  │  └─ common/                     # Shared UI and layout components
+│  ├─ components/                    # Shared UI components
+│  │  ├─ comparison/
+│  │  ├─ chat/
+│  │  ├─ auth/
+│  │  └─ common/
 │  │
 │  ├─ lib/
 │  │  ├─ api/
@@ -173,7 +200,7 @@ apps/web/
 │  │  │  └─ endpoints.ts             # API calls for backend operations
 │  │  ├─ auth/
 │  │  │  ├─ session.ts               # server/client session helpers
-│  │  │  └─ rbac.ts                  # role checks (admin/editor/viewer)
+│  │  │  └─ rbac.ts                  # role checks
 │  │  ├─ schema/                     # zod schemas for forms
 │  │  └─ utils/
 │  │
@@ -187,15 +214,15 @@ apps/web/
 
 **Key Functional Files:**
 
-- **`src/auth.ts`**: NextAuth.js configuration. Defines credentials auth, connects to backend auth endpoints, validates credentials, and maps authenticated user/session data.
+- **`src/auth.ts`**: NextAuth.js configuration. Defines credentials auth and forwards login requests to the backend `/api/v1/auth/login` endpoint.
 
-- **`src/app/layout.tsx`**: Root application layout. Wraps all pages with providers, defines HTML shell, and imports `src/app/globals.css` for global styling.
+- **`src/app/layout.tsx`**: Root application layout. Wraps all pages with providers and defines the HTML shell.
 
-- **`src/app/providers.tsx`**: Global context providers. Wraps app with NextAuth SessionProvider to make authentication state available throughout the app.
+- **`src/app/providers.tsx`**: Global context providers. Wraps the app with `SessionProvider`.
 
-- **`src/app/api/auth/[...nextauth]/route.ts`**: Next.js App Router API endpoint that exports GET/POST NextAuth handlers. This is the currently active `app/api` route.
+- **`src/app/api/auth/[...nextauth]/route.ts`**: Next.js App Router API endpoint that exports GET/POST NextAuth handlers.
 
-- **`src/components/auth/LoginForm.tsx`**: Client-side login form component with validation, auth call, error handling, and redirect behavior.
+- **`src/components/auth/LoginForm.tsx`**: Client-side login form component with validation, NextAuth sign-in, error handling, and redirect behavior.
 
 - **`src/components/auth/SignUpForm.tsx`**: Client-side signup form component with validation and registration workflow.
 

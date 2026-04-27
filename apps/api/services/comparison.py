@@ -206,10 +206,10 @@ async def _call_groq_comparison(
 
     prompt = f"""You are comparing two university academic programs for curricular rigor and quality.
 
-PROGRAM A:
+PROGRAM A - {name_a}
 {context_a}
 
-PROGRAM B:
+PROGRAM B - {name_b}
 {context_b}
 
 SCORING RUBRIC (use this to evaluate each section):
@@ -218,28 +218,29 @@ SCORING RUBRIC (use this to evaluate each section):
 Your task: produce a detailed, balanced comparison. Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
 
 {{
-  "score_a": <integer 0-100, overall rigor score for program A>,
-  "score_b": <integer 0-100, overall rigor score for program B>,
+  "score_a": <integer 0-100, overall rigor score for {name_a}>,
+  "score_b": <integer 0-100, overall rigor score for {name_b}>,
   "verdict": "<one concise sentence declaring which program is more rigorous and why>",
   "section_scores": [
     {{
       "section_id": "<snake_case section name>",
-      "score": <integer 0-100 for program A on this section>,
-      "score_b": <integer 0-100 for program B on this section>,
-      "strengths": ["<strength of program A in this section>"],
-      "weaknesses": ["<weakness of program A in this section>"]
+      "score": <integer 0-100 for {name_a} on this section>,
+      "score_b": <integer 0-100 for {name_b} on this section>,
+      "strengths": ["<strength of {name_a} in this section>"],
+      "weaknesses": ["<weakness of {name_a} in this section>"]
     }}
   ],
   "gaps": [
     {{
       "title": "<short gap title>",
       "body": "<2-3 sentence explanation of the gap between the two programs>",
-      "cite": "<which program this gap applies to, e.g. 'Program B lacks...'>"
+      "cite": "<which program this gap applies to, e.g. '{name_b} lacks...'>"
     }}
   ]
 }}
 
 Rules:
+- Always refer to programs by their full name ({name_a} and {name_b}), never as "Program A" or "Program B"
 - score_a baseline hint: {baseline_a} (adjust based on your analysis)
 - score_b baseline hint: {baseline_b} (adjust based on your analysis)
 - Produce section_scores for at least 3-5 meaningful curriculum sections found in the content
