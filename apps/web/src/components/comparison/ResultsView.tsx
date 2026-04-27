@@ -3,14 +3,15 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient, ApiError } from '@/lib/api/client'
 import { useSession } from 'next-auth/react'
+import { getComparisons } from '@/lib/api/endpoints'
+import Link from 'next/link'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// Change this interface
 interface SectionScore {
   section_id: string
   score: number       // Program A score
-  score_b: number     // Program B score 
+  score_b: number     // Program B score
   strengths: string[]
   weaknesses: string[]
 }
@@ -28,7 +29,8 @@ interface Comparison {
   title: string
   program_a_id: number | null
   program_b_id: number | null
-  comparison_results: string | null  // JSON string from the DB
+  comparison_results: string | null
+  created_at?: string
 }
 
 interface Program {
@@ -46,6 +48,14 @@ function parseResults(raw: string | null): ComparisonResults | null {
   } catch {
     return null
   }
+}
+
+function abbr(title: string) {
+  const m = title.match(/^(.+?)\s+vs\s+(.+?)(?:\s+[—–-]|$)/i)
+  if (m) return { a: m[1].trim(), b: m[2].trim() }
+  const dash = title.indexOf('—')
+  if (dash > 0) return { a: title.slice(0, dash).trim(), b: '?' }
+  return { a: title.slice(0, 20), b: '?' }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -70,6 +80,130 @@ function ScoreCard({ label, score, color }: { label: string; score: number; colo
   )
 }
 
+// ─── Comparison List View (when no ?id= in URL) ──────────────────────────────
+
+function ComparisonList() {
+  const [comparisons, setComparisons] = useState<Comparison[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const { status } = useSession()
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      setIsLoading(status === 'loading')
+      return
+    }
+    getComparisons()
+      .then(setComparisons)
+      .catch(e => setError(e instanceof ApiError ? e.message : 'Failed to load comparisons.'))
+      .finally(() => setIsLoading(false))
+  }, [status])
+
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 animate-pulse h-40" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <div
+          className="rounded-lg px-4 py-3 text-[13px]"
+          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}
+        >
+          {error}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-1" style={{ color: '#e8edf8' }}>Comparison Results</h1>
+        <p style={{ color: '#6b7a9e', fontSize: 14 }}>Browse all of your past curriculum comparisons.</p>
+      </div>
+
+      <div className="rounded-xl overflow-hidden" style={{ background: '#111520', border: '1px solid #1e2740' }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #1e2740' }}>
+          <h2 className="text-[15px] font-semibold" style={{ color: '#e8edf8' }}>
+            All Comparisons {comparisons.length > 0 && (
+              <span className="text-[12px] font-normal" style={{ color: '#6b7a9e' }}>· {comparisons.length}</span>
+            )}
+          </h2>
+          <Link href="/dashboard/compare/new">
+            <button className="px-4 py-1.5 rounded-lg text-[13px] font-medium text-white" style={{ background: '#4d7cfe' }}>
+              + New Comparison
+            </button>
+          </Link>
+        </div>
+
+        {comparisons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16" style={{ color: '#3d4d6e' }}>
+            <span style={{ fontSize: 32, marginBottom: 8 }}>▦</span>
+            <p className="text-[13px] mb-3">No comparisons yet</p>
+            <Link href="/dashboard/compare/new">
+              <button className="px-4 py-2 rounded-lg text-[13px] font-medium text-white" style={{ background: '#4d7cfe' }}>
+                Start Your First Comparison
+              </button>
+            </Link>
+          </div>
+        ) : (
+          comparisons.map((c, i) => {
+            const { a, b } = abbr(c.title)
+            const parsed = parseResults(c.comparison_results)
+            return (
+              <Link
+                key={c.id}
+                href={`/dashboard/results?id=${c.id}`}
+                className="flex items-center px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors no-underline"
+                style={{ borderBottom: i < comparisons.length - 1 ? '1px solid #1e2740' : 'none' }}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[15px] font-bold" style={{ color: '#4d7cfe' }}>{a}</span>
+                    <span style={{ color: '#3d4d6e' }}>vs</span>
+                    <span className="text-[15px] font-bold" style={{ color: '#f5a623' }}>{b}</span>
+                  </div>
+                  <div className="text-[12px]" style={{ color: '#6b7a9e' }}>
+                    {c.title}
+                    {c.created_at && ` · ${new Date(c.created_at).toLocaleDateString()}`}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 mr-6">
+                  <div className="text-center">
+                    <div className="text-[20px] font-bold" style={{ color: '#4d7cfe' }}>
+                      {parsed?.score_a ?? '—'}
+                    </div>
+                    <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{a.slice(0, 6)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[20px] font-bold" style={{ color: '#f5a623' }}>
+                      {parsed?.score_b ?? '—'}
+                    </div>
+                    <div className="text-[10px]" style={{ color: '#6b7a9e' }}>{b.slice(0, 6)}</div>
+                  </div>
+                </div>
+
+                <span
+                  className="px-3 py-1.5 rounded-lg text-[12px]"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e2740', color: '#6b7a9e' }}
+                >
+                  View →
+                </span>
+              </Link>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ResultsView() {
@@ -85,23 +219,22 @@ export default function ResultsView() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (status !== 'authenticated') {
-      setIsLoading(status === 'loading')
-      return
-    }
-
+    // If no id in URL, skip the detail load — list view will fetch its own data
     if (!comparisonId) {
       setIsLoading(false)
       return
     }
 
+    if (status !== 'authenticated') {
+      setIsLoading(status === 'loading')
+      return
+    }
+
     const load = async () => {
       try {
-        // Fetch comparison
         const comp: Comparison = await apiClient(`/api/v1/comparisons/${comparisonId}`)
         setComparison(comp)
 
-        // Fetch both programs in parallel if IDs exist
         const [pA, pB] = await Promise.all([
           comp.program_a_id ? apiClient(`/api/v1/programs/${comp.program_a_id}`) : null,
           comp.program_b_id ? apiClient(`/api/v1/programs/${comp.program_b_id}`) : null,
@@ -118,7 +251,12 @@ export default function ResultsView() {
     load()
   }, [comparisonId, status])
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // ── No id in URL → show list of all comparisons ────────────────────────────
+  if (!comparisonId) {
+    return <ComparisonList />
+  }
+
+  // ── Loading detail ─────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto">
@@ -146,18 +284,18 @@ export default function ResultsView() {
     )
   }
 
-  // ── No ID in URL ───────────────────────────────────────────────────────────
-  if (!comparisonId || !comparison) {
+  // ── Comparison not found ───────────────────────────────────────────────────
+  if (!comparison) {
     return (
       <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-24" style={{ color: '#3d4d6e' }}>
         <span style={{ fontSize: 36, marginBottom: 12 }}>▦</span>
-        <p className="text-[14px]">No comparison selected</p>
+        <p className="text-[14px]">Comparison not found</p>
         <button
-          onClick={() => router.push('/dashboard/compare/new')}
+          onClick={() => router.push('/dashboard/results')}
           className="mt-4 px-4 py-2 rounded-lg text-[13px] font-medium text-white"
           style={{ background: '#4d7cfe' }}
         >
-          Start a New Comparison
+          Back to All Comparisons
         </button>
       </div>
     )
@@ -186,6 +324,13 @@ export default function ResultsView() {
             </p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/dashboard/results')}
+              className="px-3 py-1.5 rounded-lg text-[13px] border border-white/10 transition-colors hover:bg-white/10"
+              style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)' }}
+            >
+              ← All Results
+            </button>
             {['✏ Markup', '↓ Export PDF', '↗ Share'].map((label, i) => (
               <button
                 key={label}
@@ -270,7 +415,6 @@ export default function ResultsView() {
           })}
         </div>
       ) : (
-        /* Placeholder table when no results yet */
         <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden mb-5">
           <div className="grid grid-cols-4 px-6 py-3 border-b border-white/10 text-[11px] font-semibold tracking-widest uppercase text-white/30">
             <div>Section</div><div>{shortA}</div><div>{shortB}</div><div>Δ Difference</div>
