@@ -23,9 +23,9 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function SourcesPage() {
-  const [sources, setSources]         = useState<Source[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState('')
+  const [sources, setSources]             = useState<Source[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState('')
   const [statusFilter, setStatusFilter]   = useState('')
   const [programFilter, setProgramFilter] = useState('')
   const { status } = useSession()
@@ -35,7 +35,7 @@ export default function SourcesPage() {
     setError('')
     try {
       const params: { status?: string; program_id?: number } = {}
-      if (statusFilter)  params.status = statusFilter
+      if (statusFilter)  params.status     = statusFilter
       if (programFilter) params.program_id = Number(programFilter)
       const data = await getSources(params)
       setSources(data)
@@ -51,7 +51,6 @@ export default function SourcesPage() {
       setLoading(status === 'loading')
       return
     }
-
     load()
   }, [status, statusFilter, programFilter])
 
@@ -80,7 +79,9 @@ export default function SourcesPage() {
 
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-bold mb-1" style={{ color: '#e8edf8' }}>Data Sources</h1>
+                <h1 className="text-2xl font-bold mb-1" style={{ color: '#e8edf8' }}>
+                  Data Sources
+                </h1>
                 <p style={{ color: '#6b7a9e', fontSize: 14 }}>
                   Manage the documents and links indexed for curriculum comparison.
                 </p>
@@ -95,7 +96,6 @@ export default function SourcesPage() {
               </a>
             </div>
 
-            {/* Filters */}
             <div className="flex gap-3 mb-6">
               <select
                 value={statusFilter}
@@ -112,7 +112,7 @@ export default function SourcesPage() {
               <input
                 value={programFilter}
                 onChange={e => setProgramFilter(e.target.value)}
-                placeholder="Filter by program ID…"
+                placeholder="Filter by program ID"
                 className="rounded-lg px-3 py-2 text-[13px] outline-none w-52"
                 style={{ background: '#111520', border: '1px solid #1e2740', color: '#6b7a9e' }}
               />
@@ -121,22 +121,34 @@ export default function SourcesPage() {
                 className="px-3 py-2 rounded-lg text-[13px]"
                 style={{ background: '#111520', border: '1px solid #1e2740', color: '#6b7a9e' }}
               >
-                ↻ Refresh
+                Refresh
               </button>
             </div>
 
             {error && (
-              <div className="rounded-lg px-4 py-3 mb-4 text-[13px]"
-                   style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+              <div
+                className="rounded-lg px-4 py-3 mb-4 text-[13px]"
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#f87171',
+                }}
+              >
                 {error}
               </div>
             )}
 
-            <div className="rounded-xl overflow-hidden" style={{ background: '#111520', border: '1px solid #1e2740' }}>
-              {/* Header row */}
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ background: '#111520', border: '1px solid #1e2740' }}
+            >
               <div
                 className="grid gap-4 px-6 py-3 text-[11px] font-semibold tracking-widest uppercase"
-                style={{ color: '#6b7a9e', borderBottom: '1px solid #1e2740', gridTemplateColumns: '2fr 1fr 1fr 1fr auto' }}
+                style={{
+                  color: '#6b7a9e',
+                  borderBottom: '1px solid #1e2740',
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr auto',
+                }}
               >
                 <span>Source</span>
                 <span>Type</span>
@@ -147,11 +159,10 @@ export default function SourcesPage() {
 
               {loading ? (
                 <div className="flex items-center justify-center py-16" style={{ color: '#3d4d6e' }}>
-                  <span className="text-[13px]">Loading…</span>
+                  <span className="text-[13px]">Loading</span>
                 </div>
               ) : sources.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16" style={{ color: '#3d4d6e' }}>
-                  <span style={{ fontSize: 36, marginBottom: 12 }}>📂</span>
                   <p className="text-[14px]">No sources yet</p>
                   <p className="text-[12px] mt-1">Sources will appear here once ingested</p>
                 </div>
@@ -165,27 +176,57 @@ export default function SourcesPage() {
                       borderBottom: i < sources.length - 1 ? '1px solid #1a2035' : 'none',
                     }}
                   >
-                    <span className="text-[13px] truncate" style={{ color: '#e8edf8' }} title={label(s)}>
-                      {label(s)}
-                    </span>
+                    {s.source_url ? (
+                      <a
+                        href={s.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[13px] truncate hover:underline"
+                        style={{ color: '#4d7cfe' }}
+                        title={s.source_url}
+                      >
+                        {label(s)}
+                      </a>
+                    ) : (
+                      <span
+                        className="text-[13px] truncate"
+                        style={{ color: '#e8edf8' }}
+                        title={label(s)}
+                      >
+                        {label(s)}
+                      </span>
+                    )}
+
                     <span
                       className="text-[11px] font-semibold px-2 py-1 rounded w-fit"
-                      style={{ background: 'rgba(77,124,254,0.1)', color: '#4d7cfe', border: '1px solid rgba(77,124,254,0.2)' }}
+                      style={{
+                        background: 'rgba(77,124,254,0.1)',
+                        color: '#4d7cfe',
+                        border: '1px solid rgba(77,124,254,0.2)',
+                      }}
                     >
                       {s.source_type}
                     </span>
-                    <span className="text-[13px]" style={{ color: '#6b7a9e' }}>#{s.program_id}</span>
+
+                    <span className="text-[13px]" style={{ color: '#6b7a9e' }}>
+                      #{s.program_id}
+                    </span>
+
                     <span
                       className="text-[11px] font-semibold px-2 py-1 rounded w-fit"
-                      style={{ color: STATUS_COLOR[s.status] ?? '#6b7a9e', background: 'rgba(255,255,255,0.05)' }}
+                      style={{
+                        color: STATUS_COLOR[s.status] ?? '#6b7a9e',
+                        background: 'rgba(255,255,255,0.05)',
+                      }}
                     >
                       {s.status}
                     </span>
+
                     <button
                       onClick={() => handleDelete(s.id)}
                       className="text-white/20 hover:text-red-400 transition-colors text-[13px]"
                     >
-                      🗑
+                      Delete
                     </button>
                   </div>
                 ))

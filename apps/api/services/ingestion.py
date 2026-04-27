@@ -132,8 +132,7 @@ async def process_source(
         elif source.source_type == "link":
             # parse_link returns the raw dict; normalize_chunks flattens it to
             # the same format as parse_file so downstream code is identical
-            raw_chunks = normalize_chunks(parse_link(path_or_url))
-
+            raw_chunks = normalize_chunks(await parse_link(path_or_url))
         elif source.source_type == "image":
             # OCR is explicitly out of scope for this project version
             source.status = "failed"
