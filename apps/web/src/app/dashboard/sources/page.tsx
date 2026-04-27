@@ -106,7 +106,7 @@ export default function SourcesPage() {
                 <option value="">All Statuses</option>
                 <option value="pending">Pending</option>
                 <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
+                <option value="processed">Processed</option>
                 <option value="failed">Failed</option>
               </select>
               <input

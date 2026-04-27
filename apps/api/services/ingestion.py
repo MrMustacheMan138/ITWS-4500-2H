@@ -43,9 +43,7 @@ async def organize_text(raw_text: str) -> dict[str, str]:
     - "specialization_paths": tracks, concentrations, focus areas, depth options
     - "electives": free or technical electives, optional course lists
     - "credit_load": total credit hours, per-semester load, credit distribution
-    - "capstone_research": senior design, capstone, thesis, undergraduate research
-    - "grading_assessment": grading policies, GPA requirements, exam structures
-    - "prerequisites_policy": prerequisite chains, co-requisites, enforcement rules
+    - "faculty_expertise": faculty research areas, credentials, industry backgrounds, academic expertise
 
     Return ONLY valid JSON, no markdown:
     {{
@@ -53,10 +51,8 @@ async def organize_text(raw_text: str) -> dict[str, str]:
     "core_requirements": "all relevant text here...",
     "specialization_paths": "all relevant text here...",
     "electives": "all relevant text here...",
-    "credit_load": "all relevant text here...",
-    "capstone_research": "all relevant text here...",
-    "grading_assessment": "all relevant text here...",
-    "prerequisites_policy": "all relevant text here..."
+    "credit_load": "all relevant text here..."
+    "faculty_expertise": "all relevant text here..."
     }}
 
     Only include keys where content exists. Set missing sections to null.

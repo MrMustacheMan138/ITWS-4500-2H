@@ -1,13 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient, ApiError } from '@/lib/api/client'
 
+const MAX_SOURCES = 5
+
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface SourceEntry {
+  kind: 'url' | 'pdf'
+  label: string       // display name: the URL string or the filename
+  file?: File         // only set when kind === 'pdf'
+}
 
 interface UniCardState {
   name: string
-  sources: string[]
+  institution: string
+  sources: SourceEntry[]
 }
 
 // ─── UniCard ──────────────────────────────────────────────────────────────────
@@ -15,303 +24,320 @@ interface UniCardState {
 function UniCard({
   label,
   color,
-  defaultName,
+  state,
   onChange,
 }: {
   label: string
   color: 'blue' | 'gold'
-  defaultName: string
-  onChange: (state: UniCardState) => void
+  state: UniCardState
+  onChange: (s: UniCardState) => void
 }) {
-  const [name, setName] = useState(defaultName)
-  const [sources, setSources] = useState<string[]>(
-    defaultName === 'New York University'
-      ? ['https://cs.nyu.edu/home/undergrad/cs_bs_program.html']
-      : []
-  )
-  const [inputVal, setInputVal] = useState('')
+  const [urlInput, setUrlInput] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  const borderColor = color === 'blue' ? '#4d7cfe' : '#f5a623'
-  const bgColor     = color === 'blue' ? 'rgba(77,124,254,0.15)' : 'rgba(245,166,35,0.15)'
-  const textColor   = color === 'blue' ? '#4d7cfe' : '#f5a623'
+  const accent   = color === 'blue' ? '#4d7cfe' : '#f5a623'
+  const accentBg = color === 'blue' ? 'rgba(77,124,254,0.12)' : 'rgba(245,166,35,0.12)'
+  const accentBorder = color === 'blue' ? 'rgba(77,124,254,0.25)' : 'rgba(245,166,35,0.25)'
 
-  const update = (nextName: string, nextSources: string[]) => {
-    onChange({ name: nextName, sources: nextSources })
+  const remaining = MAX_SOURCES - state.sources.length
+
+  const addUrl = () => {
+    const trimmed = urlInput.trim()
+    if (!trimmed || remaining <= 0) return
+    onChange({ ...state, sources: [...state.sources, { kind: 'url', label: trimmed }] })
+    setUrlInput('')
   }
 
-  const handleNameChange = (val: string) => {
-    setName(val)
-    update(val, sources)
+  const addFiles = (files: FileList | null) => {
+    if (!files) return
+    const pdfs = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'))
+    const slots = Math.min(pdfs.length, remaining)
+    const entries: SourceEntry[] = pdfs.slice(0, slots).map(f => ({
+      kind: 'pdf',
+      label: f.name,
+      file: f,
+    }))
+    onChange({ ...state, sources: [...state.sources, ...entries] })
   }
 
-  const addSource = () => {
-    const trimmed = inputVal.trim()
-    if (!trimmed) return
-    const next = [...sources, trimmed]
-    setSources(next)
-    setInputVal('')
-    update(name, next)
-  }
-
-  const removeSource = (idx: number) => {
-    const next = sources.filter((_, i) => i !== idx)
-    setSources(next)
-    update(name, next)
+  const remove = (idx: number) => {
+    onChange({ ...state, sources: state.sources.filter((_, i) => i !== idx) })
   }
 
   return (
-    <div className="flex-1 rounded-xl border border-white/10 bg-white/5 p-6">
-      {/* University name row */}
-      <div className="flex items-center gap-3 mb-4">
+    <div
+      className="flex-1 rounded-xl p-6 flex flex-col gap-4"
+      style={{ background: '#111520', border: `1px solid ${accentBorder}` }}
+    >
+      {/* Header badge */}
+      <div className="flex items-center gap-3">
         <span
-          className="flex items-center justify-center w-7 h-7 rounded-lg text-sm font-bold flex-shrink-0"
-          style={{ background: bgColor, color: textColor }}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+          style={{ background: accentBg, color: accent }}
         >
           {label}
         </span>
+        <span className="text-[13px] font-semibold tracking-widest uppercase" style={{ color: accent }}>
+          Program {label}
+        </span>
+      </div>
+
+      {/* University name */}
+      <div>
+        <label className="block text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6b7a9e' }}>
+          University
+        </label>
         <input
-          value={name}
-          onChange={e => handleNameChange(e.target.value)}
-          placeholder="University name..."
-          className="flex-1 bg-transparent border-none outline-none text-white text-[15px] font-medium placeholder-white/30"
+          value={state.name}
+          onChange={e => onChange({ ...state, name: e.target.value })}
+          placeholder="e.g. New York University"
+          className="w-full rounded-lg px-3 py-2.5 text-[14px] outline-none"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #1e2740', color: '#e8edf8' }}
         />
       </div>
 
-      {/* Sources label */}
-      <p className="text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-3">
-        Sources ({sources.length} / 20)
-      </p>
+      {/* Institution / Department */}
+      <div>
+        <label className="block text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6b7a9e' }}>
+          Department / Program Name
+        </label>
+        <input
+          value={state.institution}
+          onChange={e => onChange({ ...state, institution: e.target.value })}
+          placeholder="e.g. B.S. Computer Science"
+          className="w-full rounded-lg px-3 py-2.5 text-[14px] outline-none"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #1e2740', color: '#e8edf8' }}
+        />
+      </div>
 
-      {/* Existing sources */}
-      {sources.map((s, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 mb-2"
-          style={{ background: 'rgba(77,124,254,0.06)', border: '1px solid rgba(77,124,254,0.2)' }}
-        >
-          <span className="text-[#4d7cfe] text-xs">🔗</span>
-          <span className="flex-1 text-white/60 text-[12px] truncate">{s}</span>
-          <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded"
-            style={{ background: 'rgba(77,124,254,0.2)', color: '#4d7cfe' }}
-          >
-            URL
+      {/* Sources section */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: '#6b7a9e' }}>
+            Sources
+          </label>
+          <span className="text-[11px]" style={{ color: remaining === 0 ? '#f87171' : '#3d4d6e' }}>
+            {state.sources.length} / {MAX_SOURCES}
           </span>
-          <button
-            onClick={() => removeSource(i)}
-            className="text-white/20 hover:text-white/60 transition-colors text-lg leading-none ml-1"
-          >
-            ×
-          </button>
         </div>
-      ))}
 
-      {/* Add source input */}
-      <div className="flex items-center gap-2 rounded-lg px-3 py-2 mb-3 border border-dashed border-white/15">
-        <span className="text-white/30">⊕</span>
+        {/* Existing sources */}
+        <div className="flex flex-col gap-1.5 mb-3">
+          {state.sources.map((s, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded-lg px-3 py-2"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2740' }}
+            >
+              <span className="text-xs">{s.kind === 'url' ? '🔗' : '📄'}</span>
+              <span className="flex-1 text-[12px] truncate" style={{ color: '#e8edf8' }} title={s.label}>
+                {s.label}
+              </span>
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                style={{ background: accentBg, color: accent }}
+              >
+                {s.kind.toUpperCase()}
+              </span>
+              <button
+                onClick={() => remove(i)}
+                className="text-white/20 hover:text-white/60 text-base leading-none ml-1 flex-shrink-0"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {state.sources.length === 0 && (
+            <p className="text-[12px] py-2" style={{ color: '#3d4d6e' }}>
+              No sources added yet.
+            </p>
+          )}
+        </div>
+
+        {/* URL input */}
+        {remaining > 0 && (
+          <div className="flex gap-2 mb-2">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addUrl()}
+              placeholder="Paste a URL…"
+              className="flex-1 rounded-lg px-3 py-2 text-[13px] outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #1e2740', color: '#e8edf8' }}
+            />
+            <button
+              onClick={addUrl}
+              className="px-3 py-2 rounded-lg text-[13px] font-medium text-white flex-shrink-0"
+              style={{ background: accent }}
+            >
+              Add
+            </button>
+          </div>
+        )}
+
+        {/* PDF upload button */}
+        {remaining > 0 ? (
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="w-full rounded-lg py-2 text-[13px] border border-dashed transition-colors"
+            style={{ borderColor: '#1e2740', color: '#6b7a9e' }}
+          >
+            📄 Upload PDF{remaining > 1 ? 's' : ''} ({remaining} slot{remaining !== 1 ? 's' : ''} left)
+          </button>
+        ) : (
+          <p className="text-center text-[12px] py-1" style={{ color: '#f87171' }}>
+            Source limit reached
+          </p>
+        )}
+
         <input
-          value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addSource()}
-          placeholder="Paste a URL and press Enter..."
-          className="flex-1 bg-transparent border-none outline-none text-white/60 text-[13px] placeholder-white/25"
+          ref={fileRef}
+          type="file"
+          accept=".pdf"
+          multiple
+          className="hidden"
+          onChange={e => addFiles(e.target.files)}
         />
-        <button
-          onClick={addSource}
-          className="text-[12px] px-2 py-1 rounded text-white/40 hover:text-white/70 transition-colors"
-        >
-          Add
-        </button>
-      </div>
-
-      {/* Buttons */}
-      <div className="flex gap-2">
-        <button className="px-3 py-1.5 rounded-lg text-[13px] text-white/70 border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-          📎 Upload PDF
-        </button>
-        <button className="px-3 py-1.5 rounded-lg text-[13px] text-white/70 border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-          📋 Paste Text
-        </button>
       </div>
     </div>
   )
 }
 
-// ─── CompareForm ──────────────────────────────────────────────────────────────
+// Progress overlay shown during the multi-step submission 
+
+function ProgressOverlay({ step }: { step: string }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(13,17,23,0.85)' }}>
+      <div className="rounded-2xl p-10 flex flex-col items-center gap-4" style={{ background: '#111520', border: '1px solid #1e2740' }}>
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#4d7cfe', borderTopColor: 'transparent' }} />
+        <p className="text-[14px] font-medium" style={{ color: '#e8edf8' }}>{step}</p>
+      </div>
+    </div>
+  )
+}
+
+// CompareForm 
 
 export default function CompareForm() {
   const router = useRouter()
 
-  const [uniA, setUniA] = useState<UniCardState>({
-    name: 'New York University',
-    sources: ['https://cs.nyu.edu/home/undergrad/cs_bs_program.html'],
-  })
-  const [uniB, setUniB] = useState<UniCardState>({
-    name: 'Carnegie Mellon University',
-    sources: [],
-  })
-
-  const [programType, setProgramType] = useState('B.S. Computer Science')
+  const [sideA, setSideA] = useState<UniCardState>({ name: '', institution: '', sources: [] })
+  const [sideB, setSideB] = useState<UniCardState>({ name: '', institution: '', sources: [] })
+  const [progressStep, setProgressStep] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const handleRun = async () => {
     setError('')
 
-    if (!uniA.name.trim() || !uniB.name.trim()) {
-      setError('Please enter names for both universities.')
+    // Validation 
+    if (!sideA.name.trim() || !sideB.name.trim()) {
+      setError('Please enter a university name for both programs.')
       return
     }
-    if (uniA.sources.length === 0 && uniB.sources.length === 0) {
-      setError('Please add at least one source URL for either university.')
+    if (sideA.sources.length === 0 || sideB.sources.length === 0) {
+      setError('Please add at least one source for each program.')
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // 1. Create program records for both universities
+      // 1. Create both programs 
+      setProgressStep('Creating program records…')
       const [progA, progB] = await Promise.all([
         apiClient('/api/v1/programs/', {
           method: 'POST',
-          body: JSON.stringify({ name: programType, institution: uniA.name }),
+          body: JSON.stringify({ name: sideA.institution || sideA.name, institution: sideA.name }),
         }),
         apiClient('/api/v1/programs/', {
           method: 'POST',
-          body: JSON.stringify({ name: programType, institution: uniB.name }),
+          body: JSON.stringify({ name: sideB.institution || sideB.name, institution: sideB.name }),
         }),
       ])
 
-      // 2. Create the comparison record
+      // 2. Create the comparison record 
+      setProgressStep('Setting up comparison…')
+      const compTitle = `${sideA.name} vs ${sideB.name}${sideA.institution ? ` — ${sideA.institution}` : ''}`
       const comparison = await apiClient('/api/v1/comparisons/', {
         method: 'POST',
-        body: JSON.stringify({
-          title: `${uniA.name} vs ${uniB.name} — ${programType}`,
-          program_a_id: progA.id,
-          program_b_id: progB.id,
-        }),
+        body: JSON.stringify({ title: compTitle, program_a_id: progA.id, program_b_id: progB.id }),
       })
 
-      // 3. Ingest sources for both programs (must await — comparison engine needs the chunks)
-      const ingestPromises: Promise<unknown>[] = []
+      // 3. Ingest sources for both programs 
+      // Each side sends its own FormData with its own mix of URLs and files.
+      setProgressStep('Ingesting sources for both programs…')
 
-      if (uniA.sources.length > 0) {
-        const formA = new FormData()
-        formA.append('program_id', String(progA.id))
-        formA.append('links', uniA.sources.join(','))
-        ingestPromises.push(
-          apiClient('/api/v1/ingest/', { method: 'POST', body: formA, headers: {} }).catch(() => null)
-        )
+      const buildForm = (programId: number, state: UniCardState): FormData => {
+        const form = new FormData()
+        form.append('program_id', String(programId))
+        const urls = state.sources.filter(s => s.kind === 'url').map(s => s.label)
+        if (urls.length > 0) form.append('links', urls.join(','))
+        state.sources.filter(s => s.kind === 'pdf' && s.file).forEach(s => form.append('files', s.file!))
+        return form
       }
 
-      if (uniB.sources.length > 0) {
-        const formB = new FormData()
-        formB.append('program_id', String(progB.id))
-        formB.append('links', uniB.sources.join(','))
-        ingestPromises.push(
-          apiClient('/api/v1/ingest/', { method: 'POST', body: formB, headers: {} }).catch(() => null)
-        )
-      }
-
-      await Promise.all(ingestPromises)
+      await Promise.all([
+        apiClient('/api/v1/ingest/', { method: 'POST', body: buildForm(progA.id, sideA), headers: {} }),
+        apiClient('/api/v1/ingest/', { method: 'POST', body: buildForm(progB.id, sideB), headers: {} }),
+      ])
 
       // 4. Run the LLM comparison engine
+      setProgressStep('Running AI comparison… (this may take ~20 seconds)')
       await apiClient(`/api/v1/comparisons/${comparison.id}/run`, { method: 'POST' })
 
-      // 5. Navigate to results
+      // 5. Navigate to results 
       router.push(`/dashboard/results?id=${comparison.id}`)
 
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(e.message)
-      } else {
-        setError('Something went wrong. Please try again.')
-      }
-    } finally {
+      setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.')
       setIsSubmitting(false)
+      setProgressStep('')
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-6">New Comparison</h1>
+    <>
+      {isSubmitting && <ProgressOverlay step={progressStep} />}
 
-      {/* University cards */}
-      <div className="flex gap-4 mb-4">
-        <UniCard label="A" color="blue" defaultName="New York University"        onChange={setUniA} />
-        <UniCard label="B" color="gold" defaultName="Carnegie Mellon University" onChange={setUniB} />
-      </div>
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-1" style={{ color: '#e8edf8' }}>New Comparison</h1>
+          <p style={{ color: '#6b7a9e', fontSize: 14 }}>
+            Add up to {MAX_SOURCES} sources per program — any mix of URLs and PDFs.
+          </p>
+        </div>
 
-      {/* Options */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 mb-6">
-        <h2 className="text-[15px] font-semibold text-white mb-4">Comparison Options</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {/* Program type — this drives what gets sent to the API */}
-          <div>
-            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
-              Program Type
-            </label>
-            <select
-              value={programType}
-              onChange={e => setProgramType(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer"
-            >
-              {['B.S. Computer Science', 'B.S. Electrical Engineering', 'M.S. Computer Science'].map(o => (
-                <option key={o} className="bg-gray-900">{o}</option>
-              ))}
-            </select>
+        {/* Side-by-side cards */}
+        <div className="flex gap-4 mb-6">
+          <UniCard label="A" color="blue" state={sideA} onChange={setSideA} />
+          <UniCard label="B" color="gold" state={sideB} onChange={setSideB} />
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div
+            className="rounded-lg px-4 py-3 mb-4 text-[13px]"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}
+          >
+            {error}
           </div>
+        )}
 
-          {/* Focus areas — UI only for now, passed later when LLM service exists */}
-          <div>
-            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
-              Focus Areas
-            </label>
-            <select className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer">
-              {['All', 'Core Requirements', 'Elective Structure', 'Specialization Tracks'].map(o => (
-                <option key={o} className="bg-gray-900">{o}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Rigor metrics — UI only for now */}
-          <div>
-            <label className="block text-[11px] font-semibold tracking-widest text-white/30 uppercase mb-2">
-              Rigor Metrics
-            </label>
-            <select className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-white/80 text-[14px] outline-none cursor-pointer">
-              {['Full Analysis', 'Quick Overview', 'Credit Hours Only'].map(o => (
-                <option key={o} className="bg-gray-900">{o}</option>
-              ))}
-            </select>
-          </div>
+        {/* Submit row */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleRun}
+            disabled={isSubmitting}
+            className="px-8 py-3 rounded-lg text-[15px] font-medium text-white disabled:opacity-40"
+            style={{ background: '#4d7cfe' }}
+          >
+            Run Comparison →
+          </button>
         </div>
       </div>
-
-      {/* Error */}
-      {error && (
-        <div
-          className="rounded-lg px-4 py-3 mb-4 text-[13px]"
-          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Run row */}
-      <div className="flex justify-end gap-3">
-        <button className="px-6 py-2.5 rounded-lg text-[14px] text-white/70 border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-          Save as Draft
-        </button>
-        <button
-          onClick={handleRun}
-          disabled={isSubmitting}
-          className="px-6 py-2.5 rounded-lg text-[15px] font-medium text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0"
-          style={{ background: '#4d7cfe' }}
-        >
-          {isSubmitting ? 'Ingesting & Analyzing…' : 'Run Comparison →'}
-        </button>
-      </div>
-    </div>
+    </>
   )
 }

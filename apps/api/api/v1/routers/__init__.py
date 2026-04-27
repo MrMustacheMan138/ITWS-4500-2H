@@ -1,2 +1,2 @@
 # Routers package
-from api.v1.routers import auth, ingest, sources, programs, comparisons
+from api.v1.routers import auth, ingest, sources, programs, comparisons, chat

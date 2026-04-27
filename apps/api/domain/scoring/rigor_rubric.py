@@ -22,11 +22,12 @@ from domain.curriculum.section_rules import all_section_ids
 # score. Tune as the team converges on what "rigor" means for this product.
 
 SECTION_WEIGHTS = {
-    "course schedule":  0.30,
-    "required courses": 0.25,
-    "concentration":    0.25,
-    "program overview": 0.15,
-    "accreditation":    0.05,
+    "course_schedule":      0.25,
+    "core_requirements":    0.30,
+    "specialization_paths": 0.20,
+    "electives":            0.10,
+    "credit_load":          0.10,
+    "faculty_expertise":    0.05,
 }
 
 # ---------------------------------------------------------------------------
@@ -36,30 +37,35 @@ SECTION_WEIGHTS = {
 # They tell the model what "more rigorous" looks like for that specific section.
 
 SECTION_CRITERIA: dict[str, str] = {
-    "course schedule": (
+    "course_schedule": (
         "More rigorous programs have dense, well-sequenced schedules with "
         "advanced courses appearing earlier. Light semesters with mostly "
         "electives are less rigorous."
     ),
-    "required courses": (
+    "core_requirements": (
         "More rigorous programs require a broad, deep set of core courses "
         "with no easy substitutions. Programs with very few required core "
         "courses are less rigorous."
     ),
-    "concentration": (
+    "specialization_paths": (
         "More rigorous programs offer multiple deep specialization tracks "
         "each with several required advanced courses. Programs with one "
         "shallow track or no tracks are less rigorous."
     ),
-    "program overview": (
-        "More rigorous programs show clear learning outcomes, research "
-        "opportunities, and faculty expertise. Vague descriptions with no "
-        "measurable outcomes are less rigorous."
+    "electives": (
+        "More rigorous programs offer structured elective options with clear "
+        "depth requirements. Completely unrestricted free electives with no "
+        "guidance indicate lower rigor."
     ),
-    "accreditation": (
-        "More rigorous programs hold specialized accreditation (ABET, AACSB) "
-        "with evidence of outcome tracking. No accreditation or only "
-        "institutional accreditation is less rigorous."
+    "credit_load": (
+        "More rigorous programs require more total credits and maintain "
+        "consistent per-semester loads. Programs with unusually low credit "
+        "requirements are less rigorous."
+    ),
+    "faculty_expertise": (
+    "More rigorous programs have faculty with strong research records, relevant "
+    "industry experience, or recognized credentials in the field. Programs with "
+    "sparse or vague faculty profiles indicate lower academic depth."
     ),
 }
 
