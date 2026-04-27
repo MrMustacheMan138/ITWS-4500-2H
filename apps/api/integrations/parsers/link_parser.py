@@ -1,13 +1,18 @@
 """
-Link parser: fetches a URL, extracts readable text, and returns chunks
-in the same shape as pdf_parser so downstream consumers don't care about
-the source type.
+Link parser: fetches a URL with Playwright (full JS execution), extracts
+readable text via BeautifulSoup, and returns chunks in the same shape as
+pdf_parser so downstream consumers don't care about the source type.
+
+Playwright is used instead of a simple requests/WebBaseLoader fetch so that
+pages that rely on JavaScript to render their DOM (SPAs, React course
+catalogs, etc.) are fully loaded before we extract text.
 """
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from urllib.parse import urlparse
 
-# Mirrors KNOWN_HEADERS in pdf_parser.py — keywords that hint at a section
+from bs4 import BeautifulSoup
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 KNOWN_HEADERS = [
     "fall", "spring", "required", "courses", "focus track",
     "depth", "breadth", "electives", "prerequisites", "credit",
@@ -16,7 +21,6 @@ KNOWN_HEADERS = [
 
 
 def is_valid_url(url: str) -> bool:
-    """Validate that the string is a well-formed http(s) URL."""
     try:
         parsed = urlparse(url)
         return parsed.scheme in ("http", "https") and bool(parsed.netloc)
@@ -25,7 +29,6 @@ def is_valid_url(url: str) -> bool:
 
 
 def detect_header(text: str) -> str | None:
-    """Return the first known header keyword found in the chunk, if any."""
     lower = text.lower()
     for header in KNOWN_HEADERS:
         if header in lower:
@@ -33,12 +36,26 @@ def detect_header(text: str) -> str | None:
     return None
 
 
-def parse_link(url: str) -> dict:
-    """
-    Fetch a web page and return its text chunks.
+def _extract_text_from_html(html: str) -> str:
+    """Strip scripts, styles, nav boilerplate and return clean readable text."""
+    soup = BeautifulSoup(html, "lxml")
 
-    Returns the same shape as parse_file() in pdf_parser.py so both sources
-    feed into the same downstream pipeline.
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside", "noscript"]):
+        tag.decompose()
+
+    # Prefer main content container if present
+    main = soup.find("main") or soup.find(id="main") or soup.find(class_="main-content")
+    root = main if main else soup.body or soup
+
+    return root.get_text(separator="\n", strip=True)
+
+
+async def parse_link(url: str) -> dict:
+    """
+    Fetch a web page with full JS execution via Playwright (headless Chromium)
+    and return its text chunks.
+
+    Returns the same shape as parse_file() in pdf_parser.py.
 
     Raises:
         ValueError: if the URL is malformed.
@@ -48,31 +65,45 @@ def parse_link(url: str) -> dict:
         raise ValueError(f"Invalid URL: {url}")
 
     try:
-        loader = WebBaseLoader(url)
-        docs = loader.load()
-    except Exception as e:
-        raise RuntimeError(f"Failed to fetch {url}: {e}") from e
+        from playwright.async_api import async_playwright  # local import keeps startup fast
 
-    if not docs or not any(doc.page_content.strip() for doc in docs):
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage"],
+            )
+            page = await browser.new_page()
+
+            # networkidle waits for JS-heavy pages to finish rendering
+            await page.goto(url, wait_until="networkidle", timeout=30_000)
+
+            html = await page.content()
+            await browser.close()
+
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch {url} with Playwright: {e}") from e
+
+    text = _extract_text_from_html(html)
+
+    if not text.strip():
         raise RuntimeError(f"No text content found at {url}")
 
-    # Same splitter settings as text_chunker.py for consistency
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_documents(docs)
+    raw_chunks = splitter.split_text(text)
 
     text_chunks = [
         {
             "type": "text",
-            "page": None,          # web pages don't have page numbers
-            "content": chunk.page_content,
-            "header": detect_header(chunk.page_content),
+            "page": None,
+            "content": chunk,
+            "header": detect_header(chunk),
             "source_url": url,
         }
-        for chunk in chunks
-        if chunk.page_content.strip()
+        for chunk in raw_chunks
+        if chunk.strip()
     ]
 
     return {
-        "table_chunks": [],        # TODO: extract HTML tables in a later pass
+        "table_chunks": [],
         "text_chunks": text_chunks,
     }
