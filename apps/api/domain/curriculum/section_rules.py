@@ -29,53 +29,59 @@ class Section:
 
 SECTIONS: list[Section] = [
     Section(
-        id="course schedule",
+        id="course_schedule",
         name="Course Schedule",
         description=(
             "The semester-by-semester plan of courses, including fall and spring "
-            "offerings, course numbers, credit hours per term, and sequencing. "
-            "Covers what a typical student takes each semester."
+            "offerings, course numbers, credit hours per term, and sequencing."
         ),
-        keywords=["fall", "spring", "semester", "schedule", "year 1", "sophomore", "junior", "senior", "first year", "second year"],
+        keywords=["fall", "spring", "semester", "schedule", "year 1", "sophomore", "junior", "senior"],
     ),
     Section(
-        id="required courses",
-        name="Required Courses",
+        id="core_requirements",
+        name="Core Requirements",
         description=(
-            "Required foundational courses that every student in the program must "
-            "complete. Includes math prerequisites, intro sequences, and core "
-            "discipline courses with no substitution allowed."
+            "Required foundational courses every student must complete. Includes "
+            "math prerequisites, intro sequences, and mandatory core courses."
         ),
-        keywords=["required", "core", "mandatory", "prerequisite", "foundation", "credit hours", "credits"],
+        keywords=["required", "core", "mandatory", "foundation", "must complete"],
     ),
     Section(
-        id="concentration",
-        name="Concentration",
+        id="specialization_paths",
+        name="Specialization Paths",
         description=(
-            "Optional tracks, concentrations, focus areas, or depth options. "
-            "Covers how many specializations are offered, what each consists of, "
-            "and how selective or deep each track is."
+            "Optional tracks, concentrations, or focus areas. Covers how many "
+            "specializations are offered and how deep each track is."
         ),
-        keywords=["concentration", "track", "focus area", "specialization", "depth", "breadth", "elective"],
+        keywords=["concentration", "track", "focus area", "specialization", "depth"],
     ),
     Section(
-        id="program overview",
-        name="Program Overview",
+        id="electives",
+        name="Electives",
         description=(
-            "General program description, learning outcomes, faculty expertise, "
-            "research opportunities, and professional development components. "
-            "Indicates the program's pedagogical orientation."
+            "Free or technical electives and optional course lists available "
+            "to students outside of required coursework."
         ),
-        keywords=["learning outcomes", "faculty", "program goals", "description", "research", "internship", "career"],
+        keywords=["elective", "optional", "free choice", "technical elective"],
     ),
     Section(
-        id="accreditation",
-        name="Accreditation",
+        id="credit_load",
+        name="Credit Load",
         description=(
-            "Accrediting bodies, standards, certifications, and outcome tracking. "
-            "Indicates the external validation of program quality."
+            "Total credit hours required, per-semester load, and credit "
+            "distribution across the program."
         ),
-        keywords=["accreditation", "abet", "standards", "certifications", "accredited"],
+        keywords=["credit hours", "credits", "total units", "credit load", "per semester"],
+    ),
+    Section(
+    id="faculty_expertise",
+    name="Faculty Expertise",
+    description=(
+        "Faculty research areas, industry experience, credentials, and academic "
+        "backgrounds relevant to the program's field. Indicates the depth of "
+        "expertise available to students."
+    ),
+    keywords=["faculty", "professor", "research", "phd", "industry experience", "expertise", "lab", "publications"],
     ),
 ]
 

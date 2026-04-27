@@ -6,9 +6,11 @@ import { useSession } from 'next-auth/react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Change this interface
 interface SectionScore {
   section_id: string
-  score: number
+  score: number       // Program A score
+  score_b: number     // Program B score 
   strengths: string[]
   weaknesses: string[]
 }

@@ -4,6 +4,7 @@ import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
 import { getComparisons, getSources, getPrograms } from '@/lib/api/endpoints'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 
 interface Comparison {
   id: number
@@ -26,7 +27,11 @@ function parseVerdict(raw: string | null) {
 
 function abbr(title: string) {
   const m = title.match(/^(.+?)\s+vs\s+(.+?)(?:\s+[—–-]|$)/i)
-  return m ? { a: m[1].trim(), b: m[2].trim() } : { a: 'A', b: 'B' }
+  if (m) return { a: m[1].trim(), b: m[2].trim() }
+  // Fallback: split the title in half at the dash if present
+  const dash = title.indexOf('—')
+  if (dash > 0) return { a: title.slice(0, dash).trim(), b: '?' }
+  return { a: title.slice(0, 20), b: '?' }
 }
 
 export default function Dashboard() {
@@ -148,12 +153,13 @@ export default function Dashboard() {
                         </span>
                       </div>
 
-                      <a href={`/dashboard/results?id=${c.id}`}>
-                        <button className="px-3 py-1.5 rounded-lg text-[12px] transition-colors"
-                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e2740', color: '#6b7a9e' }}>
+                      <Link
+                        href={`/dashboard/results?id=${c.id}`}
+                        className="px-3 py-1.5 rounded-1g text-[12px] transition-colors"
+                        style={{background: 'rgba(255,255,255,0.05)', border: '1px solid #1e2740', color: '#6b7a9e'}}
+                        >
                           View →
-                        </button>
-                      </a>
+                      </Link>
                     </div>
                   )
                 })

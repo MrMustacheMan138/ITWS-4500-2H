@@ -146,7 +146,7 @@ async def ingest_sources(
                     source_id=source.id,
                     file_name=None,
                     source_type="link",
-                    status="processed",
+                    status=source.status,
                 ))
             except Exception as e:
                 source_results.append(SourceResult(
