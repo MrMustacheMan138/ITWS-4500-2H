@@ -10,6 +10,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - API_BASE_URL=http://api:8000
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - AUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - AUTH_TRUST_HOST=true
     restart: unless-stopped
@@ -28,7 +29,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=database
       - POSTGRES_PORT=5432
+      - SECRET_KEY=${SECRET_KEY}
       - GEMINI_API_KEY_1=${GEMINI_API_KEY_1}
+      - GEMINI_API_KEY_2=${GEMINI_API_KEY_2}
       - GROQ_API_KEY=${GROQ_API_KEY}
     restart: unless-stopped
     depends_on:

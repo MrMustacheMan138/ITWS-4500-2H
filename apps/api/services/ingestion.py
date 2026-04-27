@@ -51,7 +51,7 @@ async def organize_text(raw_text: str) -> dict[str, str]:
     "core_requirements": "all relevant text here...",
     "specialization_paths": "all relevant text here...",
     "electives": "all relevant text here...",
-    "credit_load": "all relevant text here..."
+    "credit_load": "all relevant text here...",
     "faculty_expertise": "all relevant text here..."
     }}
 
@@ -60,34 +60,29 @@ async def organize_text(raw_text: str) -> dict[str, str]:
     Document:
     {raw_text[:8000]}
     """
-
-    client = genai.Client(api_key=_GEMINI_KEY)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=(
-                "You are a document organizer. "
-                "Return only valid JSON, no markdown, no explanation."
-            )
-        ),
-    )
-
-    raw = response.text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
-
     try:
+        client = genai.Client(api_key=_GEMINI_KEY)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    "You are a document organizer. "
+                    "Return only valid JSON, no markdown, no explanation."
+                )
+            ),
+        )
+        raw = response.text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+
         sections = json.loads(raw)
         return {k: v for k, v in sections.items() if v and k in VALID_SECTIONS}
-    except json.JSONDecodeError:
-        logger.warning(
-            "Gemini returned invalid JSON for section organization; "
-            "falling back to keyword classifier"
-        )
+    except Exception as e:
+        logger.warning("Gemini organize_text failed (%s); using keyword fallback", e)
         return {}
 
 
