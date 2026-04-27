@@ -1,5 +1,5 @@
 from typing import List, Literal
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from services.chat_service import chatbot
@@ -27,10 +27,16 @@ async def chat_endpoint(payload: ChatRequest) -> ChatResponse:
             detail="Message cannot be empty",
         )
 
-    reply = await chatbot(
-        message=payload.message,
-        history=[t.model_dump() for t in (payload.history or [])],
-    )
+    try:
+        reply = await chatbot(
+            message=payload.message,
+            history=[t.model_dump() for t in (payload.history or [])],
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
 
     # Wrap reply in response model
     return ChatResponse(reply=reply)
