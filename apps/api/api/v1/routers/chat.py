@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from services.chat_service import chatbot
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(tags=["chat"])
 
 # Pydantic models for request/response validation
 class ChatTurn(BaseModel):
