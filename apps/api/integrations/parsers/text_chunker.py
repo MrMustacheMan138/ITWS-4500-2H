@@ -15,7 +15,6 @@ SECTION_HEADERS = [
     "accreditation",
 ]
 
-
 def chunk_pages(pdf_path: str, skip_pages: set[int]) -> list[dict]:
     """
     Load a PDF and split it into chunks, skipping pages whose relevant tables

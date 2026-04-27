@@ -22,30 +22,35 @@ This project is an AI-powered tool that enables university administrators to ana
 The system allows administrators to upload or link documents from two institutions, after which an AI pipeline extracts key curricular features and presents them in parallel tables. Every statement produced by the model is backed by a direct citation to the original source, ensuring transparency and preventing hallucinated claims. The goal is to provide a practical decision-support tool that helps institutions evaluate their own programs against peer universities and identify opportunities for curricular improvement.
 
 Core Features:
-User-Provided Data Ingestion
+User-Provided Data Ingestion:
 Accepts URLs, PDFs, or text copied from official course websites
 Supports multiple document types commonly used by universities
 Validation of data on the imported source (i.e. verifying if it’s the right institution)
-AI Curriculum Extraction
+
+AI Curriculum Extraction:
 Identifies structured elements such as:
 Required courses and electives
 Prerequisite chains
 Credit distribution
 Assessment style and workload indicators
 Concentration/specialization pathways
-Side-by-side Comparison Interface
+
+Side-by-side Comparison Interface:
 Generates two parallel tables representing each institution
 Sections appear only if supported by the uploaded documents
 Key differences are highlighted
-Citation Design
+
+Citation Design:
 Every important sentence is linked to a quoted source
 Users can trace claims back to original document
-Rigor Score
+
+Rigor Score:
 Produces a transparent score based on:
 Course depth
 Prerequisite complexity
 Credit intensity
 Assessment structure
+
 User Stories:
 University Administrator - I want to compare my institution’s Computer Science program with a peer school so that I can identify gaps in course offerings and prerequisite structure.
 Head of CS Department - I want to see how another University structures its concentrations so that I can refine our specialization tracks and elective options.
@@ -58,13 +63,14 @@ User-Controlled Data - the user supplies the exact documents they want analyzed,
 Citation-Driven - Every generated insight links directly to its source, allowing users to verify claims and explore documents in greater depth.
 
 Technical Architecture:
-System architecture diagram
+System architecture diagram:
 The system includes four layers: (1) ingestion of official curriculum sources, (2) normalization into a structured database, (3) comparison services, and (4) a citation-grounded AI (RAG) layer
 Official sources include university catalogs, degree requirement pages, and track/concentration descriptions from institutional websites	
 An ingestion pipeline snapshots pages/documents, extracts text, and parses courses and requirement rules
 Normalized data is stored in a relational database for consistent cross-institution comparisons
 A vector retrieval index is built from source passages so AI outputs are grounded and cited
 The web app calls backend APIs to display comparisons and AI-generated gap analyses with a “show sources” view
+
 Technology stack with justification:
 Frontend: Next.js (React) for a fast, modern UI for program selection, comparisons, and citation display
 Backend: FastAPI (Python) for ingestion, parsing, comparison logic, and RAG endpoints
@@ -72,6 +78,7 @@ Database: PostgreSQL for structured curriculum entities and query-based comparis
 Vector retrieval: pgvector (or similar) to retrieve source passages for cited AI outputs
 Document storage: S3-compatible storage for raw source snapshots and traceability
 Authentication: OAuth (Google/Microsoft) or email/password for MVP, with optional role-based access
+
 Data model overview:
 Institution: name, catalog year, base URL
 Program: institution, degree type, program name
@@ -80,18 +87,21 @@ Course: institution, code, title, credits, description
 RequirementBlock/Item: structured degree requirements (core/electives/credits) and rule text
 CourseMapping: cross-school “similar/equivalent” course links with confidence
 SourceDocument/Citation: stored sources and evidence snippets used for verification and AI citations
-API design approach
+
+API design approach:
 Comparison endpoint returns requirement and coverage differences between programs
 REST API endpoints for program discovery, curriculum retrieval, and comparisons
 AI endpoints provide gap analysis and chatbot Q&A using RAG
 All AI outputs must include citations; if evidence is insufficient, the system returns an “insufficient source support” response
-Authentication and security considerations
+
+Authentication and security considerations:
 Rate limiting on AI endpoints to prevent abuse and control cost
 Input validation and sanitization on all endpoints
 Authentication via OAuth or email/password; optional admin/editor roles for ingestion management
 Hallucination mitigation via retrieval-only generation and citation-required outputs
 Only official public documents are ingested; no sensitive student data is collected
-Deployment strategy
+
+Deployment strategy:
 Basic logging/monitoring to track ingestion failures and citation coverage
 Backend deployed as a containerized service (Render/Fly.io/AWS)
 Managed Postgres (Neon/Supabase/AWS RDS) and object storage for source snapshots
@@ -104,16 +114,19 @@ Chloe Lee - Frontend Development
 Akshat Prakash - DevOps
 Mayge Cheung - Database
 Zhimin Jiang -  Backend or Frontend Development
+
 Project management tool choice (GitHub Projects, Jira, etc.):
 GitHub Projects will be used for task and milestone tracking.
 Integrated with version control to support transparency and accountability
 Kanban-style boards will help manage task progress.
 GitHub Issues will assign tasks, track completion, and document decisions. 
+
 Sprint/milestone breakdown:
 Sprint 1: Project planning, schema definition, and peer institution selection
 Sprint 2: Curriculum data collection and traditional structured comparison
 Sprint 3: Implementation of RAG-based and agentic AI analysis
 Sprint 4: Validation of findings and preparation of final documentation
+
 Risk identification and mitigation:
 Incomplete or inconsistent data mitigated by using only official institutional documents
 AI hallucinations or uncited claims mitigated by enforcing citation-required outputs
@@ -125,16 +138,19 @@ Define the project scope, goals, and primary user story.
 Design the database schema and overall system architecture.
 Select the peer institutions that will be used for curriculum comparison.
 Prepare and deliver the initial project proposal and presentation.
+
 Sprint 2 (Week 5 - 9): Data and Frontend Development
 Collect and organize curriculum and course data from selected institutions.
 Build structured comparison features for courses, requirements, and focus areas.
 Develop and finalize the frontend interface using real or sample data.
 Ensure all core pages, navigation, and features are functional.
+
 Sprint 3 (Week 10 - 13): AI Integration and Backend Development
 Implement RAG-based and agentic AI for curriculum analysis.
 Connect the frontend to the backend database and AI services.
 Enable AI-generated comparisons and curriculum gap analysis.
 Test full system integration to ensure everything works together.
+
 Sprint 4 (Week 14- 16): Testing and Final Presentation
 Validate the accuracy of comparisons and AI-generated insights.
 Refine the interface, fix bugs, and improve performance.
