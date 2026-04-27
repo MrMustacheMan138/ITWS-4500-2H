@@ -72,6 +72,10 @@ export async function getComparisons() {
   return apiClient('/api/v1/comparisons/');
 }
 
+export async function getComparisonUsage() {
+  return apiClient('/api/v1/comparisons/usage');
+}
+
 export async function createComparison(data: { title: string; program_a_id?: number; program_b_id?: number }) {
   return apiClient('/api/v1/comparisons/', {
     method: 'POST',
