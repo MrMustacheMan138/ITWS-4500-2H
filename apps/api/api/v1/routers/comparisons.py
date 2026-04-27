@@ -2,8 +2,9 @@
 Comparison endpoints.
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Annotated, Optional, List
@@ -18,6 +19,7 @@ from services.comparison import run_comparison
 router = APIRouter()
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+MAX_COMPARISONS_PER_USER = int(os.getenv("MAX_COMPARISONS_PER_USER", "20"))
 
 
 class ComparisonCreate(BaseModel):
@@ -45,6 +47,19 @@ class RunResponse(BaseModel):
     comparison_results: Optional[str]
 
 
+class ComparisonUsageResponse(BaseModel):
+    used: int
+    limit: int
+    remaining: int
+
+
+async def _count_user_comparisons(db: AsyncSession, user_id: int) -> int:
+    result = await db.execute(
+        select(func.count(Comparison.id)).where(Comparison.user_id == user_id)
+    )
+    return int(result.scalar() or 0)
+
+
 @router.get("/", response_model=List[ComparisonResponse])
 async def get_comparisons(db: DbSession, current_user: CurrentUser):
     """Return all comparisons for the current user."""
@@ -54,6 +69,17 @@ async def get_comparisons(db: DbSession, current_user: CurrentUser):
     return result.scalars().all()
 
 
+@router.get("/usage", response_model=ComparisonUsageResponse)
+async def get_comparison_usage(db: DbSession, current_user: CurrentUser):
+    used = await _count_user_comparisons(db, current_user.id)
+    remaining = max(MAX_COMPARISONS_PER_USER - used, 0)
+    return ComparisonUsageResponse(
+        used=used,
+        limit=MAX_COMPARISONS_PER_USER,
+        remaining=remaining,
+    )
+
+
 @router.post("/", response_model=ComparisonResponse)
 async def create_comparison(
     comparison_data: ComparisonCreate,
@@ -61,6 +87,16 @@ async def create_comparison(
     current_user: CurrentUser,
 ):
     """Create a comparison record."""
+    used = await _count_user_comparisons(db, current_user.id)
+    if used >= MAX_COMPARISONS_PER_USER:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"Comparison limit reached ({MAX_COMPARISONS_PER_USER} per user). "
+                "Upgrade the limit or delete an existing comparison."
+            ),
+        )
+
     new_comparison = Comparison(
         user_id=current_user.id,
         title=comparison_data.title,
