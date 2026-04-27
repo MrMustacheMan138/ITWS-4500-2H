@@ -19,6 +19,20 @@ interface UniCardState {
   sources: SourceEntry[]
 }
 
+function formatSourceLabel(source: SourceEntry) {
+  if (source.kind === 'pdf') {
+    return source.label.length > 36 ? `${source.label.slice(0, 33)}...` : source.label
+  }
+
+  try {
+    const parsed = new URL(source.label)
+    const compact = `${parsed.hostname}${parsed.pathname}`.replace(/\/$/, '')
+    return compact.length > 40 ? `${compact.slice(0, 37)}...` : compact
+  } catch {
+    return source.label.length > 40 ? `${source.label.slice(0, 37)}...` : source.label
+  }
+}
+
 // ─── UniCard ──────────────────────────────────────────────────────────────────
 
 function UniCard({
@@ -126,12 +140,12 @@ function UniCard({
           {state.sources.map((s, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 rounded-lg px-3 py-2"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 min-w-0 max-w-full"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2740' }}
             >
               <span className="text-xs">{s.kind === 'url' ? '🔗' : '📄'}</span>
-              <span className="flex-1 text-[12px] truncate" style={{ color: '#e8edf8' }} title={s.label}>
-                {s.label}
+              <span className="flex-1 min-w-0 text-[12px] truncate" style={{ color: '#e8edf8' }} title={s.label}>
+                {formatSourceLabel(s)}
               </span>
               <span
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
