@@ -19,7 +19,7 @@ class ChatResponse(BaseModel):
     reply: str
 
 # Main chat endpoint
-@router.post("", response_model=ChatResponse)
+@router.post("/", response_model=ChatResponse)
 async def chat_endpoint(payload: ChatRequest) -> ChatResponse:
     if not payload.message.strip():
         raise HTTPException(
