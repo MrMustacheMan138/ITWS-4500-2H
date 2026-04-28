@@ -11,7 +11,7 @@ from models import Source, Chunk
 from integrations.parsers.pdf_parser import parse_file
 from integrations.parsers.link_parser import parse_link
 from integrations.parsers.text_chunker import normalize_chunks
-from domain.curriculum.section_rules import SECTIONS, classify_by_keywords
+from domain.curriculum.section_rules import SECTIONS, classify_chunk
 
 logger = logging.getLogger(__name__)
 
@@ -90,16 +90,29 @@ async def organize_text(raw_text: str) -> dict[str, str]:
 # Keyword-based fallback classifier
 # ---------------------------------------------------------------------------
 
-def _organize_by_keywords(raw_text: str) -> dict[str, str]:
+def _organize_by_keywords(raw_chunks: list[dict]) -> dict[str, str]:
     """
-    Cheap keyword-based fallback used when Gemini is unavailable or returns
-    invalid JSON. Uses domain/curriculum/section_rules.classify_by_keywords().
+    Chunk-level keyword fallback. Classifies each chunk independently,
+    then merges chunks that share a section into a single text block.
+    
+    Accepts the raw_chunks list (not the joined full_text) so we preserve
+    page order, type metadata, and section_hint signals from the parser.
     """
-    section_id = classify_by_keywords(raw_text)
-    if section_id:
-        return {section_id: raw_text}
-    # Safe default: dump everything into core_requirements
-    return {"core_requirements": raw_text}
+    buckets: dict[str, list[str]] = {}
+
+    for chunk in raw_chunks:
+        content = (chunk.get("content") or "").strip()
+        if not content:
+            continue
+        section_id = classify_chunk(chunk)
+        buckets.setdefault(section_id, []).append(content)
+
+    # Merge each bucket into one text block, preserving document order
+    return {
+        section_id: "\n\n".join(texts)
+        for section_id, texts in buckets.items()
+        if texts
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +184,7 @@ async def process_source(
                     "using keyword fallback",
                     source.id,
                 )
-                organized = _organize_by_keywords(full_text)
+                organized = _organize_by_keywords(raw_chunks)
 
         if not organized:
             source.status = "failed"

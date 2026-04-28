@@ -9,13 +9,15 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "html2pdf.js": "^0.14.0",
     "next": "^16.1.6",
+    "next-auth": "^5.0.0-beta.25",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zod": "^3.22.4",
-    "next-auth": "^5.0.0-beta.25"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/html2pdf.js": "^0.10.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",

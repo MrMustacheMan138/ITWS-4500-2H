@@ -100,17 +100,43 @@ def all_section_ids() -> list[str]:
     """Return the list of all known section ids."""
     return [s.id for s in SECTIONS]
 
-
 def classify_by_keywords(text: str) -> str | None:
     """
-    Cheap keyword-based classifier. Returns the id of the first matching
-    section, or None if no keywords match.
-
-    This is a fallback for when embeddings aren't available. Real
-    classification should use embedding similarity against Section.description.
+    Score-based keyword classifier. Counts keyword hits per section
+    and returns the section with the highest score.
+    Returns None if no keywords match at all.
     """
     lower = text.lower()
+    scores: dict[str, int] = {}
     for section in SECTIONS:
-        if any(kw in lower for kw in section.keywords):
-            return section.id
-    return None
+        score = sum(1 for kw in section.keywords if kw in lower)
+        if score > 0:
+            scores[section.id] = score
+    if not scores:
+        return None
+    return max(scores, key=lambda k: scores[k])
+
+def classify_chunk(chunk: dict) -> str:
+    """
+    Classify a single normalized chunk into a section.
+    Uses the section_hint (detected header) as a strong prior,
+    then falls back to scored keyword matching on the content.
+    
+    chunk expected keys: content (str), section_hint (str | None), type (str)
+    """
+    # Tables describing schedules/courses are almost always course_schedule
+    if chunk.get("type") == "table":
+        hint = (chunk.get("section_hint") or "").lower()
+        if any(kw in hint for kw in ["fall", "spring", "semester", "schedule", "year"]):
+            return "course_schedule"
+        if any(kw in hint for kw in ["required", "core", "mandatory"]):
+            return "core_requirements"
+        if any(kw in hint for kw in ["elective", "optional"]):
+            return "electives"
+        if any(kw in hint for kw in ["credit", "credits", "units"]):
+            return "credit_load"
+
+    # Use the section_hint from text_chunker as a head start
+    hint = chunk.get("section_hint") or ""
+    combined = f"{hint}\n{chunk.get('content', '')}"
+    return classify_by_keywords(combined) or "core_requirements"
