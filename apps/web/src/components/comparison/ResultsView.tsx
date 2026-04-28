@@ -475,7 +475,7 @@ export default function ResultsView() {
 
         <div className="mt-4">
           <button
-            onClick={() => router.push('/dashboard/chat')}
+            onClick={() => router.push(`/dashboard/chat?id=${comparisonId}`)}
             className="px-4 py-2 rounded-lg text-[13px] font-medium text-white transition-all hover:-translate-y-0.5"
             style={{ background: '#4d7cfe' }}
           >

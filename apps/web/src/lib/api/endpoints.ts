@@ -95,10 +95,11 @@ export async function runComparison(id: string | number) {
 
 export async function sendChatMessage(
   message: string,
-  history: { role: 'user' | 'model'; content: string }[] = []
+  history: { role: 'user' | 'model'; content: string }[] = [],
+  comparison_id?: number
 ) {
   return apiClient('/api/v1/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, comparison_id }),
   });
 }
