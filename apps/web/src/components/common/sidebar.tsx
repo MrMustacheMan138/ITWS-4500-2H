@@ -5,7 +5,7 @@ const navItems = [
   { href: '/dashboard',              label: 'Dashboard',         icon: '⊟' },
   { href: '/dashboard/compare/new',  label: 'New Comparison',    icon: '+' },
   { href: '/dashboard/results',      label: 'Comparison Results',icon: '▦' },
-  { href: '/dashboard/sources',      label: 'Sources',           icon: '📂' },
+  { href: '/dashboard/sources',      label: 'Sources',           icon: '⎙' },
   { href: '/dashboard/chat',         label: 'AI Chat',           icon: '◈' },
   { href: '/settings',               label: 'Settings',          icon: '⚙' },
 ]
