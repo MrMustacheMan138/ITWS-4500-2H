@@ -1,5 +1,9 @@
 'use client'
+<<<<<<< HEAD
 import { useEffect, useState, useRef } from 'react'
+=======
+import { useEffect, useState } from 'react'
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient, ApiError } from '@/lib/api/client'
 import { useSession } from 'next-auth/react'
@@ -89,6 +93,7 @@ function ComparisonList() {
   const { status } = useSession()
 
   useEffect(() => {
+<<<<<<< HEAD
   if (status !== 'authenticated') return
   getComparisons()
     .then(setComparisons)
@@ -97,6 +102,19 @@ function ComparisonList() {
   }, [status])
 
   if (isLoading || status === 'loading') {
+=======
+    if (status !== 'authenticated') {
+      setIsLoading(status === 'loading')
+      return
+    }
+    getComparisons()
+      .then(setComparisons)
+      .catch(e => setError(e instanceof ApiError ? e.message : 'Failed to load comparisons.'))
+      .finally(() => setIsLoading(false))
+  }, [status])
+
+  if (isLoading) {
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
     return (
       <div className="max-w-5xl mx-auto">
         <div className="rounded-xl border border-white/10 bg-white/5 p-6 animate-pulse h-40" />
@@ -208,14 +226,19 @@ export default function ResultsView() {
   const searchParams = useSearchParams()
   const comparisonId = searchParams.get('id')
   const { status } = useSession()
+<<<<<<< HEAD
   const resultsRef = useRef<HTMLDivElement>(null)
   
+=======
+
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
   const [comparison, setComparison] = useState<Comparison | null>(null)
   const [programA, setProgramA] = useState<Program | null>(null)
   const [programB, setProgramB] = useState<Program | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
+<<<<<<< HEAD
   const handleExportPdf = async () => {
   if (!resultsRef.current) return
   const html2pdf = (await import('html2pdf.js')).default
@@ -232,6 +255,8 @@ export default function ResultsView() {
   }
 
 
+=======
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
   useEffect(() => {
     // If no id in URL, skip the detail load — list view will fetch its own data
     if (!comparisonId) {
@@ -239,7 +264,14 @@ export default function ResultsView() {
       return
     }
 
+<<<<<<< HEAD
     if (status !== 'authenticated') return
+=======
+    if (status !== 'authenticated') {
+      setIsLoading(status === 'loading')
+      return
+    }
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
 
     const load = async () => {
       try {
@@ -268,7 +300,11 @@ export default function ResultsView() {
   }
 
   // ── Loading detail ─────────────────────────────────────────────────────────
+<<<<<<< HEAD
   if (isLoading || status === 'loading') {
+=======
+  if (isLoading) {
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
     return (
       <div className="max-w-5xl mx-auto">
         <div className="rounded-xl border border-white/10 bg-white/5 p-6 mb-5 animate-pulse">
@@ -342,6 +378,7 @@ export default function ResultsView() {
             >
               ← All Results
             </button>
+<<<<<<< HEAD
             <button
               onClick={handleExportPdf}
               className="px-3 py-1.5 rounded-lg text-[13px] border border-white/10 transition-colors hover:bg-white/10"
@@ -349,6 +386,17 @@ export default function ResultsView() {
             >
               ↓ Export PDF
             </button>
+=======
+            {['✏ Markup', '↓ Export PDF', '↗ Share'].map((label, i) => (
+              <button
+                key={label}
+                className="px-3 py-1.5 rounded-lg text-[13px] border border-white/10 transition-colors hover:bg-white/10"
+                style={{ background: i === 2 ? '#4d7cfe' : 'rgba(255,255,255,0.05)', color: i === 2 ? '#fff' : 'rgba(255,255,255,0.7)' }}
+              >
+                {label}
+              </button>
+            ))}
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
           </div>
         </div>
       </div>

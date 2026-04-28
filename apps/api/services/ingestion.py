@@ -11,7 +11,11 @@ from models import Source, Chunk
 from integrations.parsers.pdf_parser import parse_file
 from integrations.parsers.link_parser import parse_link
 from integrations.parsers.text_chunker import normalize_chunks
+<<<<<<< HEAD
 from domain.curriculum.section_rules import SECTIONS, classify_chunk
+=======
+from domain.curriculum.section_rules import SECTIONS, classify_by_keywords
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +94,7 @@ async def organize_text(raw_text: str) -> dict[str, str]:
 # Keyword-based fallback classifier
 # ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 def _organize_by_keywords(raw_chunks: list[dict]) -> dict[str, str]:
     """
     Chunk-level keyword fallback. Classifies each chunk independently,
@@ -113,6 +118,18 @@ def _organize_by_keywords(raw_chunks: list[dict]) -> dict[str, str]:
         for section_id, texts in buckets.items()
         if texts
     }
+=======
+def _organize_by_keywords(raw_text: str) -> dict[str, str]:
+    """
+    Cheap keyword-based fallback used when Gemini is unavailable or returns
+    invalid JSON. Uses domain/curriculum/section_rules.classify_by_keywords().
+    """
+    section_id = classify_by_keywords(raw_text)
+    if section_id:
+        return {section_id: raw_text}
+    # Safe default: dump everything into core_requirements
+    return {"core_requirements": raw_text}
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +201,11 @@ async def process_source(
                     "using keyword fallback",
                     source.id,
                 )
+<<<<<<< HEAD
                 organized = _organize_by_keywords(raw_chunks)
+=======
+                organized = _organize_by_keywords(full_text)
+>>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
 
         if not organized:
             source.status = "failed"
