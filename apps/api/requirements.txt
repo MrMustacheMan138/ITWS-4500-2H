@@ -24,3 +24,4 @@ lxml
 httpx
 playwright
 google-genai
+requests
