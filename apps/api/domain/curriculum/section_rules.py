@@ -100,7 +100,6 @@ def all_section_ids() -> list[str]:
     """Return the list of all known section ids."""
     return [s.id for s in SECTIONS]
 
-<<<<<<< HEAD
 def classify_by_keywords(text: str) -> str | None:
     """
     Score-based keyword classifier. Counts keyword hits per section
@@ -141,19 +140,3 @@ def classify_chunk(chunk: dict) -> str:
     hint = chunk.get("section_hint") or ""
     combined = f"{hint}\n{chunk.get('content', '')}"
     return classify_by_keywords(combined) or "core_requirements"
-=======
-
-def classify_by_keywords(text: str) -> str | None:
-    """
-    Cheap keyword-based classifier. Returns the id of the first matching
-    section, or None if no keywords match.
-
-    This is a fallback for when embeddings aren't available. Real
-    classification should use embedding similarity against Section.description.
-    """
-    lower = text.lower()
-    for section in SECTIONS:
-        if any(kw in lower for kw in section.keywords):
-            return section.id
-    return None
->>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3

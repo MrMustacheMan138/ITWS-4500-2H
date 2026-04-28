@@ -9,7 +9,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-<<<<<<< HEAD
     "html2pdf.js": "^0.14.0",
     "next": "^16.1.6",
     "next-auth": "^5.0.0-beta.25",
@@ -19,15 +18,6 @@
   },
   "devDependencies": {
     "@types/html2pdf.js": "^0.10.0",
-=======
-    "next": "^16.1.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "zod": "^3.22.4",
-    "next-auth": "^5.0.0-beta.25"
-  },
-  "devDependencies": {
->>>>>>> 906d83372dcd30abc521974d9acddd112012a1d3
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
