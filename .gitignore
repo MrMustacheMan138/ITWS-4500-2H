@@ -6,7 +6,20 @@
 
 # Back-end
 /apps/api/.env
-/apps/api/__pycache__
+/apps/api/api/__pycache__
+/apps/api/api/v1/__pycache__
+/apps/api/api/v1/routers/__pycache__
+
+/apps/api/core/__pycache__
+/apps/api/domain/__pycache__
+/apps/api/domain/curriculum/__pycache__
+/apps/api/domain/scoring/__pycache__
+
+/apps/api/integrations/__pycache__
+/apps/api/integrations/ai/__pycache__
+/apps/api/integrations/parsers/__pycache__
+
+/apps/api/services/__
 
 # Environment Variables
 .env

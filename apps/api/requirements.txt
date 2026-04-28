@@ -22,3 +22,7 @@ groq
 beautifulsoup4
 lxml
 httpx
+
+# Tests
+pytest
+pytest-asyncio
