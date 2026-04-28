@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Header from '@/components/common/header'
 import Sidebar from '@/components/common/sidebar'
 import ChatView from '@/components/comparison/ChatView'

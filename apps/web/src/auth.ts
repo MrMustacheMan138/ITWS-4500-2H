@@ -4,6 +4,10 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { loginSchema } from "@/lib/schema/auth"
 
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000"
+const AUTH_SECRET =
+  process.env.AUTH_SECRET ??
+  process.env.NEXTAUTH_SECRET ??
+  (process.env.NODE_ENV !== "production" ? "dev-only-auth-secret" : undefined)
 
 export const authConfig = {
   trustHost: true,
@@ -74,7 +78,7 @@ export const authConfig = {
     error: "/login",
   },
   session: { strategy: "jwt" },
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret: AUTH_SECRET,
 } satisfies NextAuthConfig
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

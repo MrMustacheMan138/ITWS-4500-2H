@@ -6,12 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "lint": "eslint ."
   },
   "dependencies": {
+    "html2pdf.js": "^0.14.0",
     "next": "^16.1.6",
     "next-auth": "^5.0.0-beta.25",
     "react": "^18.2.0",
@@ -19,10 +17,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0",
+    "@types/html2pdf.js": "^0.10.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",

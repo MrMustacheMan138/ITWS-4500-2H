@@ -72,6 +72,10 @@ export async function getComparisons() {
   return apiClient('/api/v1/comparisons/');
 }
 
+export async function getComparisonUsage() {
+  return apiClient('/api/v1/comparisons/usage');
+}
+
 export async function createComparison(data: { title: string; program_a_id?: number; program_b_id?: number }) {
   return apiClient('/api/v1/comparisons/', {
     method: 'POST',
@@ -91,10 +95,11 @@ export async function runComparison(id: string | number) {
 
 export async function sendChatMessage(
   message: string,
-  history: { role: 'user' | 'model'; content: string }[] = []
+  history: { role: 'user' | 'model'; content: string }[] = [],
+  comparison_id?: number
 ) {
   return apiClient('/api/v1/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, comparison_id }),
   });
 }

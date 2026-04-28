@@ -1,1 +1,3 @@
-export const { GET, POST } = require("@/auth").handlers
+import { handlers } from "@/auth"
+
+export const { GET, POST } = handlers

@@ -1,5 +1,7 @@
 'use client'
+
 import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { sendChatMessage } from '@/lib/api/endpoints'
 
 type Message = {
@@ -18,6 +20,9 @@ export default function ChatView() {
   const [typing, setTyping] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  const searchParams = useSearchParams()
+  const comparisonId = searchParams.get('id')
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typing])
@@ -26,23 +31,24 @@ export default function ChatView() {
     const text = input.trim()
     if (!text || typing) return
 
-    // Add user message immediately
     const userMsg: Message = { role: 'user', text }
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setTyping(true)
 
-    // Build history in the format the backend expects (role: 'user' | 'model')
-    // Exclude the welcome message and only send prior turns, not the current one
     const history = messages
       .filter(m => m.text !== WELCOME.text)
       .map(m => ({
-        role: m.role === 'ai' ? 'model' : 'user' as 'user' | 'model',
+        role: (m.role === 'ai' ? 'model' : 'user') as 'user' | 'model',
         content: m.text,
       }))
 
     try {
-      const data = await sendChatMessage(text, history)
+      const data = await sendChatMessage(
+        text,
+        history,
+        comparisonId ? Number(comparisonId) : undefined
+      )
       setMessages(prev => [...prev, { role: 'ai', text: data.reply }])
     } catch (err: any) {
       setMessages(prev => [
@@ -56,7 +62,6 @@ export default function ChatView() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Context bar */}
       <div className="flex items-center gap-3 px-6 py-3 border-b border-white/10 flex-shrink-0">
         <span className="text-[11px] font-semibold tracking-widest uppercase text-white/30">AI Chat</span>
         <span
@@ -67,7 +72,6 @@ export default function ChatView() {
         </span>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -88,7 +92,6 @@ export default function ChatView() {
           </div>
         ))}
 
-        {/* Typing indicator */}
         {typing && (
           <div className="flex justify-start">
             <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -101,7 +104,6 @@ export default function ChatView() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="px-6 py-4 border-t border-white/10 flex-shrink-0">
         <div className="flex gap-3 items-center">
           <textarea
