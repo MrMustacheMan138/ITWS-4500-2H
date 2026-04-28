@@ -37,7 +37,7 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
 
     if not all_chunks:
         analysis.status      = "insufficient"
-        analysis.analyzed_at = datetime.utcnow()
+        analysis.analyzed_at = datetime.now(timezone.utc)
         await db.commit()
         return analysis
 
@@ -94,7 +94,7 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
     analysis.weaknesses      = result_dict.get("weaknesses")
     analysis.improvements    = result_dict.get("improvements")
     analysis.score_breakdown = section_scores
-    analysis.status          = "complete" if overall_score else "insufficient"
+    analysis.status = "complete" if overall_score is not None else "insufficient"
     analysis.analyzed_at     = datetime.utcnow()
     await db.commit()
 

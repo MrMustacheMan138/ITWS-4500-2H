@@ -120,4 +120,4 @@ User question:
 {message}
 """
 
-    return await chat_reply(message=prompt, history=[])
+    return await chat_reply(message=prompt, history=history)
