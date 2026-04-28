@@ -22,3 +22,6 @@ groq
 beautifulsoup4
 lxml
 httpx
+playwright
+google-genai
+requests
