@@ -1,8 +1,6 @@
-# services/analysis.py
-
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from groq import Groq
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,9 +9,8 @@ from domain.scoring.rigor_rubric import SECTION_WEIGHTS, SECTION_CRITERIA
 
 MIN_WORDS = 100
 
-# Section Analysis (LLM call)
+
 async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
-    # Get or create ProgramAnalysis row
     result = await db.execute(
         select(ProgramAnalysis).where(ProgramAnalysis.program_id == program_id)
     )
@@ -26,7 +23,6 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
     await db.commit()
     await db.refresh(analysis)
 
-    # Pull all chunks for this program
     chunk_result = await db.execute(
         select(Chunk)
         .join(Source, Chunk.source_id == Source.id)
@@ -36,12 +32,11 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
     all_chunks = chunk_result.scalars().all()
 
     if not all_chunks:
-        analysis.status      = "insufficient"
+        analysis.status = "insufficient"
         analysis.analyzed_at = datetime.now(timezone.utc)
         await db.commit()
         return analysis
 
-    # Combine all chunks into one document grouped by section
     section_texts: dict[str, list[str]] = {}
     for chunk in all_chunks:
         label = chunk.section or "general"
@@ -50,60 +45,55 @@ async def analyze_program(program_id: int, db: AsyncSession) -> ProgramAnalysis:
         section_texts.setdefault(label, []).append(chunk.text)
 
     if not section_texts:
-        analysis.status      = "insufficient"
-        analysis.analyzed_at = datetime.utcnow()
+        analysis.status = "insufficient"
+        analysis.analyzed_at = datetime.now(timezone.utc)
         await db.commit()
         return analysis
 
-    # Build combined document
     combined_doc = ""
     for section_label, texts in section_texts.items():
         combined_doc += f"\n\n=== {section_label.upper()} ===\n"
         combined_doc += "\n\n".join(texts)
 
     if len(combined_doc.split()) < MIN_WORDS:
-        analysis.status      = "insufficient"
-        analysis.analyzed_at = datetime.utcnow()
+        analysis.status = "insufficient"
+        analysis.analyzed_at = datetime.now(timezone.utc)
         await db.commit()
         return analysis
 
-    # Build per-section rubric guidance for the prompt
     rubric_lines = []
     for section_id, criteria in SECTION_CRITERIA.items():
         rubric_lines.append(f"- {section_id}: {criteria}")
     rubric_block = "\n".join(rubric_lines)
 
-    # Single Groq call
     sections_found = list(section_texts.keys())
     result_dict = await _call_groq(combined_doc, sections_found, rubric_block)
 
     if not result_dict or result_dict.get("insufficient"):
-        analysis.status      = "insufficient"
-        analysis.analyzed_at = datetime.utcnow()
+        analysis.status = "insufficient"
+        analysis.analyzed_at = datetime.now(timezone.utc)
         await db.commit()
         return analysis
 
-    # Compute weighted overall score
     section_scores = result_dict.get("section_scores", {})
     overall_score = _compute_score(section_scores)
 
-    analysis.overall_score   = overall_score
-    analysis.orientation     = result_dict.get("orientation")
+    analysis.overall_score = overall_score
+    analysis.orientation = result_dict.get("orientation")
     analysis.overall_summary = result_dict.get("overall_summary")
-    analysis.strengths       = result_dict.get("strengths")
-    analysis.weaknesses      = result_dict.get("weaknesses")
-    analysis.improvements    = result_dict.get("improvements")
+    analysis.strengths = result_dict.get("strengths")
+    analysis.weaknesses = result_dict.get("weaknesses")
+    analysis.improvements = result_dict.get("improvements")
     analysis.score_breakdown = section_scores
     analysis.status = "complete" if overall_score is not None else "insufficient"
-    analysis.analyzed_at     = datetime.utcnow()
+    analysis.analyzed_at = datetime.now(timezone.utc)
     await db.commit()
 
     return analysis
 
-# Program Analysis (orchestrator)
+
 async def _call_groq(combined_doc: str, sections_found: list[str], rubric_block: str = "") -> dict:
     sections_str = ", ".join(sections_found)
-
     rubric_section = f"\nScoring rubric per section:\n{rubric_block}\n" if rubric_block else ""
 
     prompt = f"""
@@ -177,8 +167,8 @@ def _compute_score(section_scores: dict) -> float | None:
     if total_weight == 0:
         return None
 
-    coverage_ratio  = total_weight / sum(SECTION_WEIGHTS.values())
-    raw_score       = weighted_sum / total_weight
+    coverage_ratio = total_weight / sum(SECTION_WEIGHTS.values())
+    raw_score = weighted_sum / total_weight
     penalized_score = raw_score * (0.6 + 0.4 * coverage_ratio)
 
     return round(penalized_score, 1)

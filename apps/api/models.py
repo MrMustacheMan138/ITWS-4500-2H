@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, func, Boolean, ForeignKey, Text, Float, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship 
+from pgvector.sqlalchemy import Vector
 from database import Base
 
 
@@ -71,7 +72,7 @@ class Chunk(Base):
     section = Column(String, nullable=True, index=True)
     chunk_type = Column(String, default="text")      # "text" or "table"
     page_number = Column(Integer, nullable=True)
-    embedding = Column(Text, nullable=True)
+    embedding = Column(Vector(768), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     source = relationship("Source", back_populates="chunks")

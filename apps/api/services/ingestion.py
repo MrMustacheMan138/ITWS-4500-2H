@@ -6,6 +6,7 @@ import logging
 from google import genai
 from google.genai import types
 from typing import Optional
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import Source, Chunk
 from integrations.parsers.pdf_parser import parse_file
@@ -63,6 +64,22 @@ async def organize_text(raw_text: str) -> dict[str, str]:
         logger.warning("Gemini organize_text failed (%s); using keyword fallback", e)
         return {}
 
+async def generate_embedding(text: str) -> list[float] | None:
+    """
+    Generate a vector embedding for a chunk of text using Gemini.
+    Returns None if embedding generation fails so ingestion can continue
+    without embeddings rather than failing entirely.
+    """
+    try:
+        client = genai.Client(api_key=_GEMINI_KEY)
+        result = client.models.embed_content(
+            model="models/text-embedding-004",
+            contents=text,
+        )
+        return result.embeddings[0].values
+    except Exception as e:
+        logger.warning("Embedding generation failed: %s", e)
+        return None
 
 # ---------------------------------------------------------------------------
 # Keyword-based fallback classifier
@@ -144,15 +161,17 @@ async def process_source(
             return
 
         for i, (section_label, section_text) in enumerate(organized.items()):
+            embedding = await generate_embedding(section_text)
             db.add(
-                Chunk(
-                    source_id=source.id,
-                    chunk_index=i,
-                    text=section_text,
-                    section=section_label,
-                    chunk_type="text",
-                    page_number=None,
-                )
+               Chunk(
+                     source_id=source.id,
+                     chunk_index=i,
+                     text=section_text,
+                     section=section_label,
+                     chunk_type="text",
+                     page_number=None,
+                     embedding=embedding,
+               )
             )
 
         source.status = "processed"
@@ -163,3 +182,44 @@ async def process_source(
         source.error_message = str(e)
         await db.commit()
         raise
+    
+async def search_chunks(
+    query: str,
+    program_id: int,
+    db: AsyncSession,
+    top_k: int = 5,
+) -> list[Chunk]:
+    """
+    Find the most semantically similar chunks to a query string
+    using cosine distance on pgvector embeddings.
+    
+    Returns top_k chunks ordered by relevance.
+    Falls back to keyword search if query embedding fails.
+    """
+    query_embedding = await generate_embedding(query)
+
+    if query_embedding is None:
+        # Fallback: return first top_k chunks for this program if embedding fails
+        logger.warning("Query embedding failed; falling back to unranked chunks")
+        result = await db.execute(
+            select(Chunk)
+            .join(Source)
+            .where(
+                Source.program_id == program_id,
+                Chunk.embedding.isnot(None),
+            )
+            .limit(top_k)
+        )
+        return result.scalars().all()
+
+    result = await db.execute(
+        select(Chunk)
+        .join(Source)
+        .where(
+            Source.program_id == program_id,
+            Chunk.embedding.isnot(None),
+        )
+        .order_by(Chunk.embedding.cosine_distance(query_embedding))
+        .limit(top_k)
+    )
+    return result.scalars().all()

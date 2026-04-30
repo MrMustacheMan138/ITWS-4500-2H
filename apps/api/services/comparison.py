@@ -1,4 +1,3 @@
-# services/comparison.py
 """
 Comparison engine.
 
@@ -15,8 +14,8 @@ Flow:
          "section_scores": [
            {
              "section_id": "<id>",
-             "score": <0-100>,          # score for program A on this section
-             "score_b": <0-100>,        # score for program B on this section
+             "score": <0-100>,
+             "score_b": <0-100>,
              "strengths": ["..."],
              "weaknesses": ["..."]
            },
@@ -56,7 +55,6 @@ async def run_comparison(comparison_id: int, db: AsyncSession) -> Comparison:
     Execute the full comparison pipeline for a Comparison record.
     Updates comparison.comparison_results in-place and returns the record.
     """
-    # 1. Load the comparison row
     result = await db.execute(select(Comparison).where(Comparison.id == comparison_id))
     comparison = result.scalars().first()
     if not comparison:
@@ -65,15 +63,12 @@ async def run_comparison(comparison_id: int, db: AsyncSession) -> Comparison:
     if not comparison.program_a_id or not comparison.program_b_id:
         raise ValueError("Comparison must have both program_a_id and program_b_id set")
 
-    # 2. Load programs
     prog_a = await _get_program(comparison.program_a_id, db)
     prog_b = await _get_program(comparison.program_b_id, db)
 
-    # 3. Gather data for each program (analysis if available, raw chunks as fallback)
     data_a = await _collect_program_data(comparison.program_a_id, db)
     data_b = await _collect_program_data(comparison.program_b_id, db)
 
-    # 4. Run the LLM comparison
     result_dict = await _call_groq_comparison(
         name_a=f"{prog_a.institution or ''} {prog_a.name}".strip(),
         name_b=f"{prog_b.institution or ''} {prog_b.name}".strip(),
@@ -81,7 +76,6 @@ async def run_comparison(comparison_id: int, db: AsyncSession) -> Comparison:
         data_b=data_b,
     )
 
-    # 5. Persist
     comparison.comparison_results = json.dumps(result_dict)
     await db.commit()
     await db.refresh(comparison)
@@ -106,7 +100,6 @@ async def _collect_program_data(program_id: int, db: AsyncSession) -> dict:
     Return a dict with whatever we know about a program.
     Prefers a finished ProgramAnalysis; falls back to raw chunk text.
     """
-    # Try to get a completed analysis
     analysis_result = await db.execute(
         select(ProgramAnalysis).where(
             ProgramAnalysis.program_id == program_id,
@@ -118,13 +111,16 @@ async def _collect_program_data(program_id: int, db: AsyncSession) -> dict:
     if analysis:
         return {
             "source": "analysis",
-            "overall_score": analysis.overall_score,
+            "overall_score": (analysis.overall_score or 0) * 10,
             "orientation": analysis.orientation,
             "overall_summary": analysis.overall_summary,
             "strengths": analysis.strengths or [],
             "weaknesses": analysis.weaknesses or [],
             "improvements": analysis.improvements or [],
-            "score_breakdown": analysis.score_breakdown or {},
+            "score_breakdown": {
+                k: round(v * 10)
+                for k, v in (analysis.score_breakdown or {}).items()
+            },
         }
 
     # Fall back to raw chunks
@@ -139,7 +135,6 @@ async def _collect_program_data(program_id: int, db: AsyncSession) -> dict:
     if not chunks:
         return {"source": "empty", "text": ""}
 
-    # Build section-grouped text, capped at MAX_CHUNK_CHARS
     section_texts: dict[str, list[str]] = {}
     for chunk in chunks:
         label = chunk.section or "general"
@@ -196,59 +191,57 @@ async def _call_groq_comparison(
     context_a = _format_program_context(name_a, data_a)
     context_b = _format_program_context(name_b, data_b)
 
-    # Build a best-guess score baseline from existing analysis data
     baseline_a = data_a.get("overall_score") or 50
     baseline_b = data_b.get("overall_score") or 50
 
-    # Build rubric block from domain criteria
     rubric_lines = [f"- {sid}: {desc}" for sid, desc in SECTION_CRITERIA.items()]
     rubric_block = "\n".join(rubric_lines)
 
     prompt = f"""You are comparing two university academic programs for curricular rigor and quality.
 
-PROGRAM A - {name_a}
-{context_a}
+    PROGRAM A - {name_a}
+    {context_a}
 
-PROGRAM B - {name_b}
-{context_b}
+    PROGRAM B - {name_b}
+    {context_b}
 
-SCORING RUBRIC (use this to evaluate each section):
-{rubric_block}
+    SCORING RUBRIC (use this to evaluate each section):
+    {rubric_block}
 
-Your task: produce a detailed, balanced comparison. Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
+    Your task: produce a detailed, balanced comparison. Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
 
-{{
-  "score_a": <integer 0-100, overall rigor score for {name_a}>,
-  "score_b": <integer 0-100, overall rigor score for {name_b}>,
-  "verdict": "<one concise sentence declaring which program is more rigorous and why>",
-  "section_scores": [
     {{
-      "section_id": "<snake_case section name>",
-      "score": <integer 0-100 for {name_a} on this section>,
-      "score_b": <integer 0-100 for {name_b} on this section>,
-      "strengths": ["<strength of {name_a} in this section>"],
-      "weaknesses": ["<weakness of {name_a} in this section>"]
+    "score_a": <integer 0-100, overall rigor score for {name_a}>,
+    "score_b": <integer 0-100, overall rigor score for {name_b}>,
+    "verdict": "<one concise sentence declaring which program is more rigorous and why>",
+    "section_scores": [
+        {{
+        "section_id": "<snake_case section name>",
+        "score": <integer 0-100 for {name_a} on this section>,
+        "score_b": <integer 0-100 for {name_b} on this section>,
+        "strengths": ["<strength of {name_a} in this section>"],
+        "weaknesses": ["<weakness of {name_a} in this section>"]
+        }}
+    ],
+    "gaps": [
+        {{
+        "title": "<short gap title>",
+        "body": "<2-3 sentence explanation of the gap between the two programs>",
+        "cite": "<which program this gap applies to, e.g. '{name_b} lacks...'>"
+        }}
+    ]
     }}
-  ],
-  "gaps": [
-    {{
-      "title": "<short gap title>",
-      "body": "<2-3 sentence explanation of the gap between the two programs>",
-      "cite": "<which program this gap applies to, e.g. '{name_b} lacks...'>"
-    }}
-  ]
-}}
 
-Rules:
-- Always refer to programs by their full name ({name_a} and {name_b}), never as "Program A" or "Program B"
-- score_a baseline hint: {baseline_a} (adjust based on your analysis)
-- score_b baseline hint: {baseline_b} (adjust based on your analysis)
-- Produce section_scores for at least 3-5 meaningful curriculum sections found in the content
-- Produce 3-5 gaps that highlight the most important structural differences
-- Be specific and cite concrete curriculum evidence where possible
-- section_id values must be lowercase with underscores (e.g. "core_requirements", "course_schedule")
-- Scores must be integers
-"""
+    Rules:
+    - Always refer to programs by their full name ({name_a} and {name_b}), never as "Program A" or "Program B"
+    - score_a baseline hint: {baseline_a} (adjust based on your analysis)
+    - score_b baseline hint: {baseline_b} (adjust based on your analysis)
+    - Produce section_scores for at least 3-5 meaningful curriculum sections found in the content
+    - Produce 3-5 gaps that highlight the most important structural differences
+    - Be specific and cite concrete curriculum evidence where possible
+    - section_id values must be lowercase with underscores (e.g. "core_requirements", "course_schedule")
+    - Scores must be integers
+    """
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     response = client.chat.completions.create(
@@ -269,7 +262,6 @@ Rules:
 
     raw = response.choices[0].message.content.strip()
 
-    # Strip markdown fences if present
     if raw.startswith("```"):
         parts = raw.split("```")
         raw = parts[1] if len(parts) > 1 else raw
@@ -281,10 +273,8 @@ Rules:
         result = json.loads(raw)
     except json.JSONDecodeError as e:
         logger.error("Groq returned invalid JSON: %s\nRaw: %s", e, raw[:500])
-        # Return a fallback result so the page still renders something
         result = _fallback_result(name_a, name_b, data_a, data_b)
 
-    # Ensure required keys exist
     result.setdefault("score_a", int(baseline_a))
     result.setdefault("score_b", int(baseline_b))
     result.setdefault("verdict", f"Comparison between {name_a} and {name_b} complete.")
