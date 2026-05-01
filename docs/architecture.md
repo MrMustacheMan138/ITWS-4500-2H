@@ -28,62 +28,7 @@ Current top-level folders:
 ITWS-4500-2H/
 ├─ apps/
 │  ├─ api/
-│  │  ├─ main.py
-│  │  ├─ database.py
-│  │  ├─ models.py
-│  │  ├─ requirements.txt
-│  │  ├─ api/
-│  │  │  └─ v1/
-│  │  │     ├─ deps.py
-│  │  │     └─ routers/
-│  │  │        ├─ auth.py
-│  │  │        ├─ comparisons.py
-│  │  │        ├─ ingest.py
-│  │  │        ├─ programs.py
-│  │  │        └─ sources.py
-│  │  ├─ core/
-│  │  │  ├─ auth.py
-│  │  │  └─ config.py
-│  │  ├─ domain/
-│  │  │  ├─ curriculum/
-│  │  │  └─ scoring/
-│  │  ├─ integrations/
-│  │  │  ├─ embeddings/
-│  │  │  ├─ llm/
-│  │  │  └─ parsers/
-│  │  ├─ services/
-│  │  │  ├─ analysis.py
-│  │  │  └─ ingestion.py
-│  │  ├─ Dockerfile
-│  │  └─ Dockerfile.dev
 │  └─ web/
-│     ├─ src/
-│     │  ├─ app/
-│     │  │  ├─ (auth)/
-│     │  │  │  ├─ login/page.tsx
-│     │  │  │  └─ signup/page.tsx
-│     │  │  ├─ api/
-│     │  │  │  └─ auth/[...nextauth]/route.ts
-│     │  │  ├─ dashboard/
-│     │  │  │  ├─ page.tsx
-│     │  │  │  ├─ compare/new/page.tsx
-│     │  │  │  ├─ ingest/page.tsx
-│     │  │  │  ├─ results/page.tsx
-│     │  │  │  └─ sources/page.tsx
-│     │  │  ├─ globals.css
-│     │  │  ├─ layout.tsx
-│     │  │  ├─ page.tsx
-│     │  │  └─ providers.tsx
-│     │  ├─ auth.ts
-│     │  ├─ components/
-│     │  ├─ lib/
-│     │  └─ types/
-│     ├─ public/
-│     ├─ next.config.js
-│     ├─ package.json
-│     ├─ tsconfig.json
-│     ├─ Dockerfile
-│     └─ Dockerfile.dev
 ├─ docs/
 ├─ docker-compose.yml
 ├─ docker-compose.dev.yml
